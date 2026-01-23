@@ -1,0 +1,34 @@
+.file-uploader {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background-color: rgba(30, 41, 59, 0.5);
+    margin-bottom: 2rem;
+}
+
+.file-uploader:hover, .file-uploader.dragging {
+    border-color: var(--primary-color);
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--primary-color);
+}
+
+.file-uploader * {
+    pointer-events: none;
+}
+
+.upload-icon {
+    margin-bottom: 1rem;
+    color: inherit;
+}
+
+.file-uploader p {
+    margin: 0;
+    font-weight: 500;
+}

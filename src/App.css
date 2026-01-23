@@ -1,42 +1,72 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.logo h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  background: linear-gradient(to right, var(--primary-color), #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.logo-icon {
+    font-size: 1.5rem;
 }
 
-.card {
-  padding: 2em;
+.user-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-.read-the-docs {
-  color: #888;
+.username {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.sign-out-btn {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+}
+.sign-out-btn:hover {
+    background: var(--bg-color);
+    border-color: var(--text-secondary);
+}
+
+.content-area {
+    flex: 1;
+    overflow: hidden;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.placeholder-text {
+    text-align: center;
+    margin-top: 5rem;
+    color: var(--text-secondary);
 }

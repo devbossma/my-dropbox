@@ -1,0 +1,66 @@
+.file-manager {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.loading {
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.fm-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+}
+
+.crumb-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.separator {
+    color: var(--text-secondary);
+}
+
+.crumb {
+    background: transparent;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+}
+
+.crumb:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    border-radius: 6px;
+}
+
+.crumb.active {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.create-folder-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}

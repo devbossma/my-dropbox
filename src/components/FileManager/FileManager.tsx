@@ -114,20 +114,48 @@ export default function FileManager() {
         // Optimistic UI update handled by subscription.
     };
 
+    const handleRenameFile = async (id: string, currentName: string) => {
+        const newName = prompt("Enter new file name:", currentName);
+        if (!newName || newName === currentName) return;
+
+        // Updating just the fileName in DynamoDB. 
+        // The Backend Trigger will detect this change and handle the S3 rename + s3Key update automatically.
+        try {
+            await client.models.FileMetadata.update({
+                id,
+                fileName: newName
+            });
+        } catch (error) {
+            console.error("Rename error", error);
+            alert("Failed to rename file.");
+        }
+    };
+
     const handleDownload = async (key: string) => {
         try {
             const link = await getUrl({
                 path: key,
-                // Ensure access level matches storage config. 
-                // We configured 'user-files/{entity_id}/*' for authenticated users.
-                // getUrl usually defaults to 'guest' or 'public' if not specified? 
-                // Actually, Gen 2 uses 'path' directly. S3 bucket policies control access.
-                // Amplify Gen 2 gets a presigned URL.
             });
-            window.open(link.url.toString(), '_blank');
+
+            // Force download by fetching blob
+            // Note: This requires CORS configuration on the S3 bucket to allow GET from the frontend domain (localhost).
+            const response = await fetch(link.url.toString());
+            if (!response.ok) throw new Error('Network response was not ok');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            const filename = key.split('/').pop() || 'download';
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         } catch (error) {
             console.error("Download error", error);
-            alert("Failed to download file.");
+            alert("Failed to download file. This might be a CORS issue.");
         }
     };
 
@@ -197,6 +225,7 @@ export default function FileManager() {
                 onDeleteFile={handleDeleteFile}
                 onDeleteFolder={() => alert("Folder deletion not implemented in this version.")}
                 onDownload={handleDownload}
+                onRenameFile={handleRenameFile}
             />
         </div>
     );

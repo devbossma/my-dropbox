@@ -39,8 +39,10 @@ s3Bucket.addEventNotification(
 // 2. Trigger DynamoDB -> Lambda -> S3
 const dynamoTriggerLambda = backend.dynamoTrigger.resources.lambda as LambdaFunction;
 dynamoTriggerLambda.addEnvironment('BUCKET_NAME', s3Bucket.bucketName);
+dynamoTriggerLambda.addEnvironment('TABLE_NAME', fileMetadataTable.tableName); // Add Table Name
 s3Bucket.grantReadWrite(dynamoTriggerLambda);
 s3Bucket.grantDelete(dynamoTriggerLambda);
+fileMetadataTable.grantWriteData(dynamoTriggerLambda); // Grant Write Access
 
 // Enable Streams on the table via DynamoEventSource
 dynamoTriggerLambda.addEventSource(new DynamoEventSource(fileMetadataTable, {

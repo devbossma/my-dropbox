@@ -1,6 +1,7 @@
 import { File as FileIcon, Folder as FolderIcon, MoreVertical, Trash2, Download, Edit2 } from 'lucide-react';
 import './FileExplorer.css';
 import type { Schema } from '../../../amplify/data/resource';
+import { getUrl } from 'aws-amplify/storage';
 
 
 type Folder = Schema['Folder']['type'];
@@ -13,9 +14,10 @@ interface FileExplorerProps {
     onDeleteFile: (id: string, key: string) => void;
     onDeleteFolder: (id: string) => void; // Optional: MVP might not delete non-empty folders
     onDownload: (key: string) => void;
+    onRenameFile: (id: string, currentName: string) => void;
 }
 
-export default function FileExplorer({ files, folders, onNavigate, onDeleteFile, onDownload }: FileExplorerProps) {
+export default function FileExplorer({ files, folders, onNavigate, onDeleteFile, onDownload, onRenameFile }: FileExplorerProps) {
 
     const formatSize = (bytes: number) => {
         if (bytes === 0) return '0 Bytes';
@@ -61,8 +63,11 @@ export default function FileExplorer({ files, folders, onNavigate, onDeleteFile,
                         <div className="col-size">{formatSize(file.fileSize)}</div>
                         <div className="col-date">{new Date(file.createdAt).toLocaleDateString()}</div>
                         <div className="col-actions">
-                            <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onDownload(file.s3Key); }} title="Download">
+                            <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onDownload(file.s3Key); }} title="Download" >
                                 <Download size={16} />
+                            </button>
+                            <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onRenameFile(file.id, file.fileName); }} title="Rename">
+                                <Edit2 size={16} />
                             </button>
                             <button className="icon-btn delete-btn" onClick={(e) => { e.stopPropagation(); onDeleteFile(file.id, file.s3Key); }} title="Delete">
                                 <Trash2 size={16} />

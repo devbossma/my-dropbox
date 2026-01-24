@@ -1,7 +1,6 @@
-import { File as FileIcon, Folder as FolderIcon, MoreVertical, Trash2, Download, Edit2 } from 'lucide-react';
+import { File as FileIcon, Folder as FolderIcon, Trash2, Download, Edit2 } from 'lucide-react';
 import './FileExplorer.css';
 import type { Schema } from '../../../amplify/data/resource';
-import { getUrl } from 'aws-amplify/storage';
 
 
 type Folder = Schema['Folder']['type'];

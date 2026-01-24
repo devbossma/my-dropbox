@@ -28,7 +28,7 @@ npm install
 ## Usage
 Start the local development server:
 ```bash
-npm run dev
+https://main.d2st7dsfis69v2.amplifyapp.com/
 ```
 
 ### The Core Team

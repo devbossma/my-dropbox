@@ -1,32 +1,23 @@
 .file-manager {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    flex: 1;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.loading {
-    color: var(--text-secondary);
-    text-align: center;
-    margin-top: 2rem;
+    padding: 2rem;
+    overflow-y: auto;
+    height: 100vh;
 }
 
 .fm-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2rem;
 }
 
 .breadcrumbs {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    overflow-x: auto;
 }
 
 .crumb-group {
@@ -35,32 +26,60 @@
     gap: 0.5rem;
 }
 
-.separator {
-    color: var(--text-secondary);
-}
-
 .crumb {
     background: transparent;
     border: none;
-    padding: 0.4rem 0.6rem;
     color: var(--text-secondary);
-    display: flex;
-    align-items: center;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius);
+    transition: all 0.2s;
 }
 
 .crumb:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface-hover);
     color: var(--text-main);
-    border-radius: 6px;
 }
 
 .crumb.active {
-    color: var(--primary-color);
-    font-weight: 600;
+    color: var(--text-main);
+    font-weight: 500;
 }
 
-.create-folder-btn {
+.separator {
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.create-folder-btn, .toolbar-actions button {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.create-folder-btn.primary {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+}
+
+.create-folder-btn.primary:hover {
+    background: var(--primary-hover);
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.loading-bar-container {
+    width: 100%;
+    margin-bottom: 1rem;
+    /* Amplify loader handles its own height/color */
 }

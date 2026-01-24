@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { S3Client, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { S3Event } from 'aws-lambda';
 
@@ -55,6 +55,22 @@ export const handler = async (event: S3Event) => {
 
         // Handle ObjectCreated
         if (record.eventName.startsWith('ObjectCreated')) {
+            // Check for existing version
+            let version = 1;
+            try {
+                const existingItem = await docClient.send(new GetCommand({
+                    TableName: tableName,
+                    Key: { id: key }
+                }));
+
+                if (existingItem.Item && existingItem.Item.version) {
+                    version = existingItem.Item.version + 1;
+                    console.log(`File exists. Incrementing version from ${existingItem.Item.version} to ${version}`);
+                }
+            } catch (err) {
+                console.log("Error checking existing item, assuming version 1", err);
+            }
+
             await docClient.send(new PutCommand({
                 TableName: tableName,
                 Item: {
@@ -69,6 +85,7 @@ export const handler = async (event: S3Event) => {
                     updatedAt: new Date().toISOString(),
                     owner: owner,
                     isDeleted: false,
+                    version: version
                 }
             }));
         }

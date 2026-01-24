@@ -12,12 +12,13 @@ interface FileExplorerProps {
     folders: Folder[];
     onNavigate: (folder: Folder) => void;
     onDeleteFile: (id: string, key: string) => void;
-    onDeleteFolder: (id: string) => void; // Optional: MVP might not delete non-empty folders
+    onDeleteFolder: (id: string) => void;
+    onRenameFolder: (id: string, name: string) => void;
     onDownload: (key: string) => void;
     onRenameFile: (id: string, currentName: string) => void;
 }
 
-export default function FileExplorer({ files, folders, onNavigate, onDeleteFile, onDownload, onRenameFile }: FileExplorerProps) {
+export default function FileExplorer({ files, folders, onNavigate, onDeleteFile, onDeleteFolder, onRenameFolder, onDownload, onRenameFile }: FileExplorerProps) {
 
     const formatSize = (bytes: number) => {
         if (bytes === 0) return '0 Bytes';
@@ -33,6 +34,7 @@ export default function FileExplorer({ files, folders, onNavigate, onDeleteFile,
             <div className="file-list-header">
                 <span className="col-name">Name</span>
                 <span className="col-size">Size</span>
+                <span className="col-version">Ver</span>
                 <span className="col-date">Date</span>
                 <span className="col-actions"></span>
             </div>
@@ -61,6 +63,9 @@ export default function FileExplorer({ files, folders, onNavigate, onDeleteFile,
                             <span>{file.fileName}</span>
                         </div>
                         <div className="col-size">{formatSize(file.fileSize)}</div>
+                        <div className="col-version">
+                            {file.version ? <span className="version-badge">v{file.version}</span> : <span className="version-badge">v1</span>}
+                        </div>
                         <div className="col-date">{new Date(file.createdAt).toLocaleDateString()}</div>
                         <div className="col-actions">
                             <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onDownload(file.s3Key); }} title="Download" >

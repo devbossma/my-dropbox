@@ -28,6 +28,7 @@ const fileMetadataTable = backend.data.resources.tables['FileMetadata'];
 const s3TriggerLambda = backend.s3Trigger.resources.lambda as LambdaFunction;
 s3TriggerLambda.addEnvironment('TABLE_NAME', fileMetadataTable.tableName);
 fileMetadataTable.grantWriteData(s3TriggerLambda);
+fileMetadataTable.grantReadData(s3TriggerLambda); // Required for checking existing version
 s3Bucket.grantRead(s3TriggerLambda); // Required for HeadObject to get metadata
 
 s3Bucket.addEventNotification(

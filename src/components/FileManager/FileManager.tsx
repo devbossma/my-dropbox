@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import { getUrl, remove } from 'aws-amplify/storage';
+import { getUrl } from 'aws-amplify/storage';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import { Loader } from '@aws-amplify/ui-react';
 import type { Schema } from '../../../amplify/data/resource';
 import FileExplorer from '../FileExplorer/FileExplorer';
 import FileUploader from '../FileUploader/FileUploader';
@@ -20,6 +21,12 @@ export default function FileManager() {
     const [subFolders, setSubFolders] = useState<Folder[]>([]);
     const [identityId, setIdentityId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    const refreshFiles = () => {
+        setRefreshTrigger(prev => prev + 1);
+    };
 
     // Get Identity ID for S3 paths
     useEffect(() => {
@@ -38,27 +45,12 @@ export default function FileManager() {
         const folderId = currentFolder ? currentFolder.id : null;
 
         // Sub to Folders
-        // Note: Filtering by parentFolderId might need an index if using 'list'. 
-        // observeQuery handles local filtering mostly or needs GSI. 
-        // For MVP, we list all and filter? Or assume parentFolderId is filterable?
-        // Generically 'list' returns all. We should filter.
-        // Ideally we add a secondary index on parentFolderId.
-        // For now, let's assume observeQuery works fine.
-
-        // Using filter in observeQuery:
         const folderSub = client.models.Folder.observeQuery({
             filter: {
-                parentFolderId: { eq: folderId ?? 'root' } // Use 'root' for top level if we store it as 'root' or use a check? 
-                // In schema, parentFolderId is a.id() which makes it optional? 
-                // If it's optional, we filter by attributeExists: false?
-                // Amplify Gen 2 filter for null: { attributeExists: false }? Or { eq: null }?
+                parentFolderId: { eq: folderId ?? 'root' }
             }
         }).subscribe({
             next: ({ items }) => {
-                // Filter manually if needed, but the filter above should work if parentFolderId is stored reliably.
-                // If top level folders have no parentFolderId, we need to handle that.
-                // Let's assume top level folders have parentFolderId = 'root' for simplicity in this implementation logic
-                // providing we modify createFolder to enforce it.
                 setSubFolders(items);
             },
             error: (err) => console.error('Folder sub error', err)
@@ -90,7 +82,7 @@ export default function FileManager() {
             fileSub.unsubscribe();
             debugSub.unsubscribe();
         };
-    }, [currentFolder, identityId]);
+    }, [currentFolder, identityId, refreshTrigger]);
 
     const handleCreateFolder = async () => {
         const name = prompt("Enter folder name:");
@@ -100,19 +92,103 @@ export default function FileManager() {
             name,
             parentFolderId: currentFolder ? currentFolder.id : 'root',
             path: currentFolder ? `${currentFolder.path}/${name}` : name,
+            size: 0,
         });
+        refreshFiles();
     };
 
-    const handleDeleteFile = async (id: string, key: string) => {
+    const handleDeleteFolder = async (folderId: string) => {
+        // Check for children (Files)
+        const { data: files } = await client.models.FileMetadata.list({
+            filter: { folderId: { eq: folderId } }
+        });
+
+        // Check for children (Folders)
+        const { data: subFolders } = await client.models.Folder.list({
+            filter: { parentFolderId: { eq: folderId } }
+        });
+
+        const activeFiles = files.filter(f => !f.isDeleted);
+
+        if (activeFiles.length > 0 || subFolders.length > 0) {
+            alert("Cannot delete non-empty folder.");
+            return;
+        }
+
+        if (!confirm("Are you sure you want to delete this empty folder?")) return;
+
+        try {
+            await client.models.Folder.delete({ id: folderId });
+            refreshFiles();
+        } catch (error) {
+            console.error("Delete folder error", error);
+        }
+    };
+
+    const handleRenameFolder = async (folderId: string, currentName: string) => {
+        // Check for children (Files)
+        const { data: files } = await client.models.FileMetadata.list({
+            filter: { folderId: { eq: folderId } }
+        });
+
+        // Check for children (Folders)
+        const { data: subFolders } = await client.models.Folder.list({
+            filter: { parentFolderId: { eq: folderId } }
+        });
+
+        const activeFiles = files.filter(f => !f.isDeleted);
+
+        if (activeFiles.length > 0 || subFolders.length > 0) {
+            alert("Cannot rename non-empty folder.");
+            return;
+        }
+
+        const newName = prompt("Enter new folder name:", currentName);
+        if (!newName || newName === currentName) return;
+
+        // Note: Renaming requires updating 'path'. Since it's empty, we assume path is just proper parent + name.
+        // But if 'path' logic is complex, we need to replicate it.
+        // Here we assume path = parentPath + name. But we need to fetch current folder to know parentPath.
+        // For MVP, if empty, we might just update name? But path is required. 
+        // Let's fetch the folder first.
+        try {
+            const { data: folder } = await client.models.Folder.get({ id: folderId });
+            if (!folder) return;
+
+            // Construct new path. 
+            // Old path: "parent/oldName"
+            // New path: "parent/newName"
+            const pathParts = folder.path.split('/');
+            pathParts.pop(); // remove old name
+            pathParts.push(newName);
+            const newPath = pathParts.join('/');
+
+            await client.models.Folder.update({
+                id: folderId,
+                name: newName,
+                path: newPath
+            });
+            refreshFiles();
+        } catch (error) {
+            console.error("Rename folder error", error);
+        }
+    };
+
+    const handleDeleteFile = async (id: string, _key: string) => {
         if (!confirm("Are you sure you want to delete this file?")) return;
 
-        // We update metadata to isDeleted=true OR delete the record?
-        // Trigger is on REMOVE. So we should delete the record.
-        await client.models.FileMetadata.delete({ id });
-
-        // The trigger will handle S3 deletion.
-        // Optimistic UI update handled by subscription.
+        try {
+            await client.models.FileMetadata.update({
+                id,
+                isDeleted: true
+            });
+            refreshFiles();
+        } catch (error) {
+            console.error("Delete file error", error);
+            alert("Failed to delete file.");
+        }
     };
+
 
     const handleRenameFile = async (id: string, currentName: string) => {
         const newName = prompt("Enter new file name:", currentName);
@@ -125,6 +201,7 @@ export default function FileManager() {
                 id,
                 fileName: newName
             });
+            refreshFiles();
         } catch (error) {
             console.error("Rename error", error);
             alert("Failed to rename file.");
@@ -199,31 +276,55 @@ export default function FileManager() {
                     ))}
                 </div>
 
-                <button className="create-folder-btn primary" onClick={handleCreateFolder}>
-                    <FolderPlus size={18} />
-                    <span>New Folder</span>
-                </button>
+                <div className="toolbar-actions" style={{ display: 'flex', gap: '8px' }}>
+                    <button className="icon-btn" onClick={refreshFiles} title="Refresh Files" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px' }}>
+                        <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>↻</span>
+                    </button>
+                    <button className="create-folder-btn primary" onClick={handleCreateFolder}>
+                        <FolderPlus size={18} />
+                        <span>New Folder</span>
+                    </button>
+                </div>
             </div>
 
             <FileUploader
                 currentPath={currentPathString}
                 currentFolderId={currentFolder ? currentFolder.id : 'root'}
                 onUploadStart={() => {
-                    /* Optional: show global loader */
                     console.log("Upload started");
+                    setLoading(true);
+                    setUploadProgress(0);
                 }}
+                onProgress={(progress) => setUploadProgress(progress)}
                 onUploadSuccess={() => {
                     console.log("Upload success - waiting for sync");
+                    setUploadProgress(100);
                     // Trigger might take a moment.
+                    setTimeout(() => {
+                        refreshFiles();
+                        setUploadProgress(null);
+                        setLoading(false);
+                    }, 2000);
                 }}
             />
+
+            {loading && (
+                <div className="loading-bar-container">
+                    <Loader
+                        variation="linear"
+                        percentage={uploadProgress !== null ? uploadProgress : undefined}
+                        isDeterminate={uploadProgress !== null}
+                    />
+                </div>
+            )}
 
             <FileExplorer
                 files={files}
                 folders={subFolders}
                 onNavigate={handleNavigate}
                 onDeleteFile={handleDeleteFile}
-                onDeleteFolder={() => alert("Folder deletion not implemented in this version.")}
+                onDeleteFolder={handleDeleteFolder}
+                onRenameFolder={handleRenameFolder}
                 onDownload={handleDownload}
                 onRenameFile={handleRenameFile}
             />

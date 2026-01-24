@@ -9,9 +9,10 @@ interface FileUploaderProps {
     currentFolderId: string; // Add this
     onUploadStart: () => void;
     onUploadSuccess: () => void;
+    onProgress?: (progress: number) => void;
 }
 
-export default function FileUploader({ currentPath, currentFolderId, onUploadStart, onUploadSuccess }: FileUploaderProps) {
+export default function FileUploader({ currentPath, currentFolderId, onUploadStart, onUploadSuccess, onProgress }: FileUploaderProps) {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,7 +57,9 @@ export default function FileUploader({ currentPath, currentFolderId, onUploadSta
                         },
                         onProgress: ({ transferredBytes, totalBytes }) => {
                             if (totalBytes) {
-                                console.log(`Upload progress ${Math.round(transferredBytes / totalBytes * 100)}%`);
+                                const percent = Math.round(transferredBytes / totalBytes * 100);
+                                console.log(`Upload progress ${percent}%`);
+                                onProgress?.(percent);
                             }
                         },
                     }

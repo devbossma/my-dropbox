@@ -6,6 +6,7 @@ const schema = a.schema({
       name: a.string().required(),
       parentFolderId: a.id(),
       path: a.string().required(),
+      size: a.integer(), // Add size field for folder
     })
     .authorization((allow) => [allow.owner()]),
 
@@ -22,6 +23,7 @@ const schema = a.schema({
       lastModified: a.timestamp(),
       isDeleted: a.boolean(), // Soft delete flag
       owner: a.string(), // Explicitly defined to ensure Trigger can write to it matchingly
+      version: a.integer(), // Version number (starts at 1)
     })
     .authorization((allow) => [allow.owner()]),
 });

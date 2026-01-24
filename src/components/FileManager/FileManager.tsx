@@ -7,6 +7,7 @@ import type { Schema } from '../../../amplify/data/resource';
 import FileExplorer from '../FileExplorer/FileExplorer';
 import FileUploader from '../FileUploader/FileUploader';
 import { FolderPlus, Home, ChevronRight } from 'lucide-react';
+import { useToast } from '../Toast/Toast';
 import './FileManager.css';
 
 const client = generateClient<Schema>();
@@ -19,13 +20,37 @@ export default function FileManager() {
     const [breadcrumbs, setBreadcrumbs] = useState<Folder[]>([]);
     const [files, setFiles] = useState<FileMetadata[]>([]);
     const [subFolders, setSubFolders] = useState<Folder[]>([]);
+    const [folderSizes, setFolderSizes] = useState<Record<string, number>>({});
     const [identityId, setIdentityId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const { showToast } = useToast();
 
     const refreshFiles = () => {
         setRefreshTrigger(prev => prev + 1);
+    };
+
+    // Helper function to recursively calculate folder size
+    const calculateFolderSize = async (folderId: string): Promise<number> => {
+        let totalSize = 0;
+
+        // Get all files in this folder
+        const { data: filesInFolder } = await client.models.FileMetadata.list({
+            filter: { folderId: { eq: folderId } }
+        });
+        const activeFiles = filesInFolder.filter(f => !f.isDeleted);
+        totalSize += activeFiles.reduce((sum, f) => sum + (f.fileSize || 0), 0);
+
+        // Get all subfolders and recursively calculate their sizes
+        const { data: childFolders } = await client.models.Folder.list({
+            filter: { parentFolderId: { eq: folderId } }
+        });
+        for (const child of childFolders) {
+            totalSize += await calculateFolderSize(child.id);
+        }
+
+        return totalSize;
     };
 
     // Get Identity ID for S3 paths
@@ -50,8 +75,14 @@ export default function FileManager() {
                 parentFolderId: { eq: folderId ?? 'root' }
             }
         }).subscribe({
-            next: ({ items }) => {
+            next: async ({ items }) => {
                 setSubFolders(items);
+                // Calculate sizes for each subfolder
+                const sizes: Record<string, number> = {};
+                for (const folder of items) {
+                    sizes[folder.id] = await calculateFolderSize(folder.id);
+                }
+                setFolderSizes(sizes);
             },
             error: (err) => console.error('Folder sub error', err)
         });
@@ -88,13 +119,19 @@ export default function FileManager() {
         const name = prompt("Enter folder name:");
         if (!name) return;
 
-        await client.models.Folder.create({
-            name,
-            parentFolderId: currentFolder ? currentFolder.id : 'root',
-            path: currentFolder ? `${currentFolder.path}/${name}` : name,
-            size: 0,
-        });
-        refreshFiles();
+        try {
+            await client.models.Folder.create({
+                name,
+                parentFolderId: currentFolder ? currentFolder.id : 'root',
+                path: currentFolder ? `${currentFolder.path}/${name}` : name,
+                size: 0,
+            });
+            refreshFiles();
+            showToast(`Folder "${name}" created successfully`, 'success');
+        } catch (error) {
+            console.error("Create folder error", error);
+            showToast('Failed to create folder', 'error');
+        }
     };
 
     const handleDeleteFolder = async (folderId: string) => {
@@ -111,7 +148,12 @@ export default function FileManager() {
         const activeFiles = files.filter(f => !f.isDeleted);
 
         if (activeFiles.length > 0 || subFolders.length > 0) {
-            alert("Cannot delete non-empty folder.");
+            alert(
+                "This folder is not empty.\n\n" +
+                `Contents: ${activeFiles.length} file(s), ${subFolders.length} subfolder(s)\n\n` +
+                "This version does not support deleting non-empty folders. " +
+                "Please navigate into the folder and delete all files and subfolders first."
+            );
             return;
         }
 
@@ -120,8 +162,10 @@ export default function FileManager() {
         try {
             await client.models.Folder.delete({ id: folderId });
             refreshFiles();
+            showToast('Folder deleted successfully', 'success');
         } catch (error) {
             console.error("Delete folder error", error);
+            showToast('Failed to delete folder', 'error');
         }
     };
 
@@ -169,8 +213,10 @@ export default function FileManager() {
                 path: newPath
             });
             refreshFiles();
+            showToast('Folder renamed successfully', 'success');
         } catch (error) {
             console.error("Rename folder error", error);
+            showToast('Failed to rename folder', 'error');
         }
     };
 
@@ -178,14 +224,12 @@ export default function FileManager() {
         if (!confirm("Are you sure you want to delete this file?")) return;
 
         try {
-            await client.models.FileMetadata.update({
-                id,
-                isDeleted: true
-            });
+            await client.models.FileMetadata.delete({ id });
             refreshFiles();
+            showToast('File deleted successfully', 'success');
         } catch (error) {
             console.error("Delete file error", error);
-            alert("Failed to delete file.");
+            showToast('Failed to delete file', 'error');
         }
     };
 
@@ -202,9 +246,10 @@ export default function FileManager() {
                 fileName: newName
             });
             refreshFiles();
+            showToast(`File renamed to "${newName}"`, 'success');
         } catch (error) {
             console.error("Rename error", error);
-            alert("Failed to rename file.");
+            showToast('Failed to rename file', 'error');
         }
     };
 
@@ -304,6 +349,7 @@ export default function FileManager() {
                         refreshFiles();
                         setUploadProgress(null);
                         setLoading(false);
+                        showToast('Upload completed successfully', 'success');
                     }, 2000);
                 }}
             />
@@ -321,6 +367,7 @@ export default function FileManager() {
             <FileExplorer
                 files={files}
                 folders={subFolders}
+                folderSizes={folderSizes}
                 onNavigate={handleNavigate}
                 onDeleteFile={handleDeleteFile}
                 onDeleteFolder={handleDeleteFolder}

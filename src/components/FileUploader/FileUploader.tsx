@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { uploadData } from 'aws-amplify/storage';
 import { getCurrentUser } from 'aws-amplify/auth';
 import { UploadCloud } from 'lucide-react';
+import { useToast } from '../Toast/Toast';
 import './FileUploader.css';
 
 interface FileUploaderProps {
@@ -15,6 +16,7 @@ interface FileUploaderProps {
 export default function FileUploader({ currentPath, currentFolderId, onUploadStart, onUploadSuccess, onProgress }: FileUploaderProps) {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { showToast } = useToast();
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -32,11 +34,11 @@ export default function FileUploader({ currentPath, currentFolderId, onUploadSta
         setIsDragging(false);
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             console.log("Files dropped:", e.dataTransfer.files);
-            handleUpload(e.dataTransfer.files);
+            handleUpload(Array.from(e.dataTransfer.files));
         }
     };
 
-    const handleUpload = async (files: FileList) => {
+    const handleUpload = async (files: File[]) => {
         console.log("Handle Upload called with:", files.length, "files");
         console.log("Uploading to path:", currentPath);
         onUploadStart();
@@ -44,8 +46,7 @@ export default function FileUploader({ currentPath, currentFolderId, onUploadSta
             // Get current user ID to set as owner
             const { userId } = await getCurrentUser();
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+            for (const file of files) {
                 console.log(`Starting upload for: ${file.name}`);
                 const operation = uploadData({
                     path: `${currentPath}${file.name}`,
@@ -70,11 +71,7 @@ export default function FileUploader({ currentPath, currentFolderId, onUploadSta
             onUploadSuccess();
         } catch (error) {
             console.error('Upload Failed Error:', error);
-            if (error instanceof Error) {
-                console.error('Error Message:', error.message);
-                console.error('Error Stack:', error.stack);
-            }
-            alert(`Upload failed: ${error}`);
+            showToast('Upload failed', 'error');
         }
     };
 
@@ -91,7 +88,13 @@ export default function FileUploader({ currentPath, currentFolderId, onUploadSta
                 multiple
                 ref={fileInputRef}
                 style={{ display: 'none' }}
-                onChange={(e) => e.target.files && handleUpload(e.target.files)}
+                onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                        const files = Array.from(e.target.files); // Copy files before resetting
+                        e.target.value = ''; // Reset input so the same file can be uploaded again
+                        handleUpload(files);
+                    }
+                }}
             />
             <UploadCloud size={48} className="upload-icon" />
             <p>Drag & drop files here, or click to select</p>

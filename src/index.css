@@ -72,3 +72,173 @@ button.primary:hover {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary); 
 }
+
+/* ========================================
+   Amplify Authenticator Theme
+   ======================================== */
+
+/* Full-page centered layout */
+[data-amplify-authenticator] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--bg-color) 0%, #1a1a2e 50%, var(--bg-color) 100%);
+}
+
+/* Authenticator container and router card */
+[data-amplify-authenticator] [data-amplify-container],
+[data-amplify-authenticator] [data-amplify-router] {
+  background-color: var(--surface-color) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  box-sizing: border-box;
+}
+
+[data-amplify-authenticator] [data-amplify-container] {
+  max-width: 420px;
+  width: 100%;
+}
+
+/* Form styling */
+[data-amplify-authenticator] [data-amplify-form] {
+  padding: 0;
+}
+
+/* Header styling */
+[data-amplify-authenticator] [data-amplify-router] h3 {
+  color: var(--text-main);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Input fields */
+[data-amplify-authenticator] .amplify-input,
+[data-amplify-authenticator] .amplify-field-group__control {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+[data-amplify-authenticator] .amplify-input:focus,
+[data-amplify-authenticator] .amplify-field-group__control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+
+[data-amplify-authenticator] .amplify-input::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Labels */
+[data-amplify-authenticator] .amplify-label {
+  color: var(--text-main);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+/* Primary button (Sign In, Create Account, etc.) */
+[data-amplify-authenticator] .amplify-button--primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #a855f7 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+[data-amplify-authenticator] .amplify-button--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+}
+
+[data-amplify-authenticator] .amplify-button--primary:active {
+  transform: translateY(0);
+}
+
+/* Link buttons (Forgot password, Back to sign in) */
+[data-amplify-authenticator] .amplify-button--link {
+  color: var(--primary-color);
+  background: transparent;
+  border: none;
+  font-weight: 500;
+  padding: 0.5rem;
+  transition: color 0.2s;
+}
+
+[data-amplify-authenticator] .amplify-button--link:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+/* Tabs (Sign In / Create Account) */
+[data-amplify-authenticator] .amplify-tabs {
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+}
+
+[data-amplify-authenticator] .amplify-tabs-item {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+[data-amplify-authenticator] .amplify-tabs-item:hover {
+  color: var(--text-main);
+}
+
+[data-amplify-authenticator] .amplify-tabs-item[data-state="active"] {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background: transparent;
+}
+
+/* Error/Alert messages */
+[data-amplify-authenticator] .amplify-alert {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--danger);
+  border-radius: 8px;
+  color: #fca5a5;
+}
+
+/* Divider */
+[data-amplify-authenticator] .amplify-divider {
+  border-color: var(--border-color);
+}
+
+[data-amplify-authenticator] .amplify-divider::before,
+[data-amplify-authenticator] .amplify-divider::after {
+  border-color: var(--border-color);
+}
+
+/* Password show/hide button */
+[data-amplify-authenticator] .amplify-field-group__outer-end .amplify-button {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-left: none;
+  color: var(--text-secondary);
+}
+
+[data-amplify-authenticator] .amplify-field-group__outer-end .amplify-button:hover {
+  background: var(--surface-color);
+  color: var(--text-main);
+}
+
+/* Footer text */
+[data-amplify-authenticator] .amplify-text {
+  color: var(--text-secondary);
+}

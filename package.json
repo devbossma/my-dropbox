@@ -10,11 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "'": "file:awesome.me/kit-9ebf1c8bfa@latest'",
     "@aws-amplify/ui-react": "^6.13.2",
     "@aws-sdk/client-dynamodb": "^3.974.0",
     "@aws-sdk/client-s3": "^3.974.0",
     "@aws-sdk/lib-dynamodb": "^3.974.0",
     "@aws-sdk/util-dynamodb": "^3.974.0",
+    "@fortawesome/fontawesome-svg-core": "^7.1.0",
+    "@fortawesome/free-brands-svg-icons": "^7.1.0",
+    "@fortawesome/free-regular-svg-icons": "^7.1.0",
+    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@fortawesome/react-fontawesome": "^3.1.1",
     "@types/aws-lambda": "^8.10.160",
     "amplify": "^0.0.11",
     "aws-amplify": "^6.15.10",

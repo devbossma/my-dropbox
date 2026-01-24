@@ -10,6 +10,7 @@ type FileMetadata = Schema['FileMetadata']['type'];
 interface FileExplorerProps {
     files: FileMetadata[];
     folders: Folder[];
+    folderSizes: Record<string, number>;
     onNavigate: (folder: Folder) => void;
     onDeleteFile: (id: string, key: string) => void;
     onDeleteFolder: (id: string) => void;
@@ -18,7 +19,7 @@ interface FileExplorerProps {
     onRenameFile: (id: string, currentName: string) => void;
 }
 
-export default function FileExplorer({ files, folders, onNavigate, onDeleteFile, onDeleteFolder, onRenameFolder, onDownload, onRenameFile }: FileExplorerProps) {
+export default function FileExplorer({ files, folders, folderSizes, onNavigate, onDeleteFile, onDeleteFolder, onRenameFolder, onDownload, onRenameFile }: FileExplorerProps) {
 
     const formatSize = (bytes: number) => {
         if (bytes === 0) return '0 Bytes';
@@ -47,10 +48,19 @@ export default function FileExplorer({ files, folders, onNavigate, onDeleteFile,
                             <FolderIcon className="row-icon folder-icon" size={20} />
                             <span>{folder.name}</span>
                         </div>
-                        <div className="col-size">-</div>
+                        <div className="col-size">
+                            {folderSizes[folder.id] !== undefined && folderSizes[folder.id] > 0
+                                ? formatSize(folderSizes[folder.id])
+                                : '-'}
+                        </div>
                         <div className="col-date">-</div>
                         <div className="col-actions">
-                            {/* Folder actions? */}
+                            <button className="icon-btn" onClick={(e) => { e.stopPropagation(); onRenameFolder(folder.id, folder.name); }} title="Rename">
+                                <Edit2 size={16} />
+                            </button>
+                            <button className="icon-btn delete-btn" onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); }} title="Delete">
+                                <Trash2 size={16} />
+                            </button>
                         </div>
                     </div>
                 ))}

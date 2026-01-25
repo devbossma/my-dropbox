@@ -1,13 +1,19 @@
+import { useState } from 'react';
 import { Authenticator, ThemeProvider, type Theme } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faParachuteBox } from '@fortawesome/free-solid-svg-icons';
+import { deleteUser } from 'aws-amplify/auth';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../amplify/data/resource';
 
 import './App.css';
 
 // Components
 import FileManager from './components/FileManager/FileManager';
 import { ToastProvider } from './components/Toast/Toast';
+
+const client = generateClient<Schema>();
 
 // Custom Authenticator components
 const components = {
@@ -84,6 +90,47 @@ const theme: Theme = {
 };
 
 function App() {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const deleteMe = async () => {
+    const confirmed = window.confirm(
+      "Are you sure? This will permanently delete your account and ALL your files and folders. This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsDeleting(true);
+
+      // 1. Clean up Files
+      console.log("Fetching files for cleanup...");
+      const { data: files } = await client.models.FileMetadata.list();
+      for (const file of files) {
+        console.log(`Deleting file record: ${file.fileName}`);
+        await client.models.FileMetadata.delete({ id: file.id });
+      }
+
+      // 2. Clean up Folders
+      console.log("Fetching folders for cleanup...");
+      const { data: folders } = await client.models.Folder.list();
+      for (const folder of folders) {
+        if (folder.parentFolderId === 'root' && folder.name === 'root') continue; // Skip root marker if it exists
+        console.log(`Deleting folder record: ${folder.name}`);
+        await client.models.Folder.delete({ id: folder.id });
+      }
+
+      // 3. Delete the account
+      console.log("Deleting user account...");
+      await deleteUser();
+
+      // The page will likely reload or redirect upon account deletion success
+    } catch (error) {
+      console.error('Error during cleanup and account deletion:', error);
+      alert("An error occurred while deleting your account. Please try again.");
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <ToastProvider>
@@ -98,8 +145,19 @@ function App() {
                 <div className="user-controls">
                   <span className="username">{user?.username}</span>
                   <button onClick={signOut} className="sign-out-btn">Sign out</button>
+                  <button onClick={deleteMe} className="delete-btn" disabled={isDeleting}>Delete Account</button>
                 </div>
               </header>
+
+              {isDeleting && (
+                <div className="deleting-overlay">
+                  <div className="deleting-content">
+                    <div className="spinner"></div>
+                    <h2>Deleting Account</h2>
+                    <p>Please wait while we permanently remove your data and close your account...</p>
+                  </div>
+                </div>
+              )}
 
               <div className="content-area">
                 <FileManager />

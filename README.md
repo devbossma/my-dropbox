@@ -208,10 +208,19 @@ dynamoTrigger Lambda:
 - Type-safe GraphQL queries and mutations
 - IntelliSense support for all operations
 
-**5. Account Management**
-- **Deep Purge**: Custom logic to delete all user-owned FileMetadata and Folder records.
-- **Cleanup Overlay**: Professional glassmorphism loading screen during data purging.
 - **S3 Orphan Prevention**: Automatic Lambda trigger ensures physical files are removed after DB cleanup.
+
+**6. Premium UI/UX & Immersive Experience**
+- **Modern Application Shell**: A professional sidebar-based layout with a fixed navigation rail and a sticky, contextual top bar.
+- **Immersive Login Animation**: 
+  - **Parallax Clouds**: Layered, drifting clouds with randomized speeds and opacities for a deep atmospheric background.
+  - **Animated Brand Logo**: The application favicon acts as an ascending/floating parachute in the login and sign-up headers.
+  - **Glassmorphism**: Transparent authentication forms and blurred overlays for a sleek, high-end feel.
+- **Professional Navigation**: 
+  - **Interactive Breadcrumbs**: Scrollable path navigation with a smooth fade-out effect for deep folder structures.
+  - **Contextual User Menu**: A dedicated header component with a toggled dropdown for account management.
+- **Compact Sign-Up**: Re-engineered form layouts to ensure full visibility within a single viewport, eliminating the need for scrolling during onboarding.
+- **Dynamic Feedback**: Lift animations on hover for file cards, version badges, and smooth state transitions.
 
 ### Key Technical Decisions
 
@@ -299,7 +308,7 @@ sequenceDiagram
 ```
 
 ### Technology Stack
-- **Frontend**: React 19, TypeScript, AWS Amplify v6, Lucide-React, FontAwesome
+- **Frontend**: React 19, TypeScript, AWS Amplify v6, Lucide-React, FontAwesome, CSS3 Keyframe Animations
 - **Backend**: AWS Amplify Gen 2 (Amplify Gen2 / CDK), Node.js 24+
 - **Storage**: Amazon S3 with Event Notifications
 - **Database**: Amazon DynamoDB with Streams
@@ -588,8 +597,13 @@ https://main.d2st7dsfis69v2.amplifyapp.com
 # Uses pre-signed S3 URLs (valid for 15 minutes)
 ```
 
-**9. Delete Your Account**
-
+**10. Delete Your Account**
+```
+1. Click on the Delete Account button.
+2. Confirm that you want to delete your data.
+3. Please wait patiently while your data is being completely removed.
+4. Once done, you'll be automatically redirected to the Login page.
+```
 
 ### Command Reference
 ```bash
@@ -631,15 +645,19 @@ my-dropbox/
 │   │   └── dynamo-trigger/          # DB -> S3 logic
 │   └── backend.ts                   # Infrastructure Wiring
 ├── src/
+│   ├── assets/                      # Brand logo and animation SVGs
 │   ├── components/
-│   │   ├── Auth/                    # Login/Signup forms
 │   │   ├── FileExplorer/            # Icon-based file browser
 │   │   ├── FileManager/             # Core state management
 │   │   ├── FileUploader/            # Drag & Drop uploads
+│   │   ├── Header/                  # Top bar with User Menu
+│   │   ├── Login/                   # Immersive background animation
+│   │   ├── Sidebar/                 # Navigation & Storage monitor
 │   │   └── Toast/                   # Notification system
-│   ├── App.tsx                      # Root component & Route Guard
-│   ├── App.css                      # Global Styles & Theme
-│   ├── configureAmplify.ts          # Entry point for Amplify configurations.
+│   ├── App.tsx                      # Root component & Application Shell
+│   ├── App.css                      # Navigation Rail & Top Bar layouts
+│   ├── index.css                    # Design Tokens & Global Styles
+│   ├── configureAmplify.ts          # Amplify client initialization
 │   └── main.tsx                     # Entry point
 └── README.md
 ```
@@ -714,6 +732,11 @@ sequenceDiagram
   ├─ Check DynamoDB record deleted
   └─ Check S3 file removed automatically
 ✅ Delete empty folder
+✅ UI: Verify login background animation is smooth
+✅ UI: Verify logo ascends in header
+✅ UI: Verify breadcrumbs scroll horizontally on narrow screens
+✅ UI: Verify user menu toggles correctly
+✅ UI: Ensure sign-up form fits in viewport
 ✅ Sign out and sign back in
 ✅ Verify data persistence
 ✅ Check CloudWatch logs for both Lambdas

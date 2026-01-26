@@ -2,16 +2,17 @@
   --font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   --primary-color: #3b82f6;
   --primary-hover: #2563eb;
-  --bg-color: #0f172a;
-  --surface-color: #1e293b;
-  --text-main: #f1f5f9;
+  --bg-color: #0c0f17;
+  --surface-color: #141a26;
+  --text-main: #f8fafc;
   --text-secondary: #94a3b8;
-  --border-color: #334155;
+  --border-color: #232d3d;
   --success: #10b981;
   --danger: #ef4444;
   --radius: 12px;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(0,0,0,0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.2);
 }
 
 body {
@@ -83,7 +84,9 @@ button.primary:hover {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-color) 0%, #1a1a2e 50%, var(--bg-color) 100%);
+  background: transparent;
+  position: relative;
+  z-index: 10;
 }
 
 /* Authenticator container and router card */
@@ -110,7 +113,7 @@ button.primary:hover {
 [data-amplify-authenticator] [data-amplify-router] h3 {
   color: var(--text-main);
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 /* Input fields */
@@ -120,8 +123,8 @@ button.primary:hover {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   color: var(--text-main);
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -140,7 +143,8 @@ button.primary:hover {
 [data-amplify-authenticator] .amplify-label {
   color: var(--text-main);
   font-weight: 500;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
 }
 
 /* Primary button (Sign In, Create Account, etc.) */
@@ -150,8 +154,8 @@ button.primary:hover {
   border-radius: 8px;
   color: white;
   font-weight: 600;
-  padding: 0.875rem 1.5rem;
-  font-size: 1rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -184,7 +188,7 @@ button.primary:hover {
 /* Tabs (Sign In / Create Account) */
 [data-amplify-authenticator] .amplify-tabs {
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
 [data-amplify-authenticator] .amplify-tabs-item {
@@ -193,7 +197,8 @@ button.primary:hover {
   border-bottom: 2px solid transparent;
   color: var(--text-secondary);
   font-weight: 500;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
   transition: color 0.2s, border-color 0.2s;
 }
 

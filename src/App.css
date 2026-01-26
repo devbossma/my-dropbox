@@ -1,135 +1,113 @@
-.app-container {
+.app-shell {
   display: flex;
-  flex-direction: column;
   height: 100vh;
   width: 100%;
+  overflow: hidden;
+  background: var(--bg-color);
 }
 
-.app-header {
+.app-main {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: var(--surface-color);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  z-index: 10;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-color);
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.logo h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  background: linear-gradient(to right, var(--primary-color), #a855f7);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 700;
-}
-
-.logo-icon {
-    font-size: 1.5rem;
-}
-
-.user-controls {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.username {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.sign-out-btn {
-    font-size: 0.85rem;
-    padding: 0.5rem 1rem;
-    background: transparent;
-    border: 1px solid var(--border-color);
-}
-.sign-out-btn:hover {
-    background: var(--bg-color);
-    border-color: var(--text-secondary);
-}
-
-.content-area {
-    flex: 1;
-    overflow: hidden;
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-}
-
-.placeholder-text {
-    text-align: center;
-    margin-top: 5rem;
-    color: var(--text-secondary);
-}
-
-.delete-btn {
-    font-size: 0.85rem;
-    padding: 0.5rem 1rem;
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: red;
-}
-.delete-btn:hover {
-    background: var(--bg-color);
-    border-color: var(--text-secondary);
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
 }
 
 /* Deletion Overlay */
 .deleting-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(8px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    color: white;
-    text-align: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(12, 15, 23, 0.9);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
 .deleting-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-    max-width: 400px;
-}
-
-.deleting-content h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: #f1f5f9;
-}
-
-.deleting-content p {
-    color: #94a3b8;
-    margin: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
 .spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(59, 130, 246, 0.2);
-    border-radius: 50%;
-    border-top-color: #3b82f6;
-    animation: spin 1s ease-in-out infinite;
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 768px) {
+  .logo-text, .username {
+    display: none;
+  }
+  
+  .top-bar-right {
+    gap: 0.75rem;
+  }
+}
+
+/* Authenticator Header & Parachute Animation */
+.auth-header {
+    text-align: center;
+    padding: 1rem 0 0.5rem;
+    overflow: hidden;
+}
+
+.parachute-container {
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.parachute-logo-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    animation: ascending 3s ease-in-out infinite alternate;
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+}
+
+.auth-title {
+    margin: 0;
+    font-size: 1.3rem;
+    background: linear-gradient(to right, #3b82f6, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+.auth-subtitle {
+    margin: 0.5rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+@keyframes ascending {
+    0% { transform: translateY(15px) scale(0.95); }
+    100% { transform: translateY(-25px) scale(1.05); }
 }

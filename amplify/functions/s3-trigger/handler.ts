@@ -28,6 +28,7 @@ export const handler = async (event: S3Event) => {
         // Determine folderId (Initial Logic / Fallback)
         const isRoot = parts.length === 2 && parts[0] === 'user-files';
         let folderId = isRoot ? 'root' : undefined;
+        let mimeType = 'unknown';
 
         // Fetch Metadata to get Owner and FolderID
         let owner = 'unknown';
@@ -48,6 +49,11 @@ export const handler = async (event: S3Event) => {
             if (headData.Metadata && headData.Metadata.folderid) {
                 folderId = headData.Metadata.folderid;
                 console.log(`Found folderid in metadata: ${folderId}`);
+            }
+            
+            if (headData.Metadata && headData.Metadata.mimetype) {
+                mimeType = headData.Metadata.mimetype;
+                console.log(`Found mimetype in metadata: ${mimeType}`);
             }
         } catch (err) {
             console.error('Error fetching S3 metadata:', err);
@@ -78,6 +84,7 @@ export const handler = async (event: S3Event) => {
                     fileName: fileName,
                     fileSize: size,
                     s3Key: key,
+                    mimeType: mimeType,
                     folderPath: folderPath,
                     folderId: folderId,
                     lastModified: Date.now(),

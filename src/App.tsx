@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Authenticator, ThemeProvider, type Theme } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faParachuteBox } from '@fortawesome/free-solid-svg-icons';
 import { deleteUser } from 'aws-amplify/auth';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../amplify/data/resource';
@@ -12,6 +10,10 @@ import './App.css';
 // Components
 import FileManager from './components/FileManager/FileManager';
 import { ToastProvider } from './components/Toast/Toast';
+import LoginBackground from './components/Login/LoginBackground';
+import Sidebar from './components/Sidebar/Sidebar';
+import Header from './components/Header/Header';
+import logoSvg from './assets/logo.svg';
 
 const client = generateClient<Schema>();
 
@@ -19,33 +21,12 @@ const client = generateClient<Schema>();
 const components = {
   Header() {
     return (
-      <div style={{
-        textAlign: 'center',
-        padding: '.5rem 0 .5rem',
-      }}>
-        <FontAwesomeIcon
-          icon={faParachuteBox}
-          size="3x"
-          bounce
-          style={{ color: '#3b82f6ff', marginBottom: '0.75rem' }}
-        />
-        <h1 style={{
-          margin: 0,
-          fontSize: '1.75rem',
-          background: 'linear-gradient(to right, #3b82f6, #a855f7)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontWeight: 700,
-        }}>
-          MyDropBox
-        </h1>
-        <p style={{
-          margin: '0.5rem 0 0',
-          color: '#94a3b8',
-          fontSize: '0.9rem',
-        }}>
-          Your files, Anywhere!
-        </p>
+      <div className="auth-header">
+        <div className="parachute-container">
+          <img src={logoSvg} alt="MyDropBox Logo" className="parachute-logo-img" />
+        </div>
+        <h1 className="auth-title">MyDropBox</h1>
+        <p className="auth-subtitle">Your files, Anywhere!</p>
       </div>
     );
   },
@@ -133,36 +114,39 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
+      <LoginBackground />
       <ToastProvider>
         <Authenticator components={components}>
           {({ signOut, user }) => (
-            <main className="app-container">
-              <header className="app-header">
-                <div className="logo">
-                  <span className="logo-icon"></span>
-                  <h1><FontAwesomeIcon icon={faParachuteBox} bounce size="xl" style={{ color: "#3b82fc", }} />MyDropBox</h1>
-                </div>
-                <div className="user-controls">
-                  <span className="username">{user?.username}</span>
-                  <button onClick={signOut} className="sign-out-btn">Sign out</button>
-                  <button onClick={deleteMe} className="delete-btn" disabled={isDeleting}>Delete Account</button>
-                </div>
-              </header>
+            <div className="app-shell">
+              <Sidebar
+                storageUsed="14.2 GB"
+                storageTotal="20 GB"
+                storagePercentage={71}
+              />
 
-              {isDeleting && (
-                <div className="deleting-overlay">
-                  <div className="deleting-content">
-                    <div className="spinner"></div>
-                    <h2>Deleting Account</h2>
-                    <p>Please wait while we permanently remove your data and close your account...</p>
-                  </div>
-                </div>
-              )}
+              <main className="app-main">
+                <Header
+                  user={user}
+                  signOut={signOut || (() => { })}
+                  deleteMe={deleteMe}
+                  isDeleting={isDeleting as any}
+                />
 
-              <div className="content-area">
-                <FileManager />
-              </div>
-            </main>
+                <div className="app-content">
+                  {isDeleting && (
+                    <div className="deleting-overlay">
+                      <div className="deleting-content">
+                        <div className="spinner"></div>
+                        <h2>Deleting Account</h2>
+                        <p>Total cleanup in progress...</p>
+                      </div>
+                    </div>
+                  )}
+                  <FileManager />
+                </div>
+              </main>
+            </div>
           )}
         </Authenticator>
       </ToastProvider>

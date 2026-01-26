@@ -97,21 +97,13 @@ export default function FileManager() {
                 const activeFiles = items.filter(f => !f.isDeleted);
                 setFiles(activeFiles);
                 setLoading(false);
-                console.log("Filtered Files in current folder:", activeFiles);
             },
             error: (err) => console.error('File sub error', err)
-        });
-
-        // DEBUG: List ALL files to check if they exist but are hidden by filter
-        const debugSub = client.models.FileMetadata.observeQuery().subscribe({
-            next: ({ items }) => console.log('DEBUG: ALL FILES IN DB:', items),
-            error: (e) => console.log('DEBUG Error:', e)
         });
 
         return () => {
             folderSub.unsubscribe();
             fileSub.unsubscribe();
-            debugSub.unsubscribe();
         };
     }, [currentFolder, identityId, refreshTrigger]);
 
@@ -307,18 +299,21 @@ export default function FileManager() {
         <div className="file-manager">
             {/* Toolbar / Breadcrumbs */}
             <div className="fm-toolbar">
-                <div className="breadcrumbs">
-                    <button className={`crumb ${!currentFolder ? 'active' : ''}`} onClick={() => handleNavigateUp(-1)}>
-                        <Home size={18} />
-                    </button>
-                    {breadcrumbs.map((folder, index) => (
-                        <div key={folder.id} className="crumb-group">
-                            <ChevronRight size={16} className="separator" />
-                            <button className="crumb" onClick={() => handleNavigateUp(index)}>
-                                {folder.name}
-                            </button>
-                        </div>
-                    ))}
+                <div className="breadcrumbs-container">
+                    <div className="breadcrumbs">
+                        <button className={`crumb-btn ${!currentFolder ? 'active' : ''}`} onClick={() => handleNavigateUp(-1)}>
+                            <Home size={18} />
+                            <span>Home</span>
+                        </button>
+                        {breadcrumbs.map((folder, index) => (
+                            <div key={folder.id} className="crumb-group">
+                                <ChevronRight size={14} className="separator" />
+                                <button className="crumb-btn" onClick={() => handleNavigateUp(index)}>
+                                    {folder.name}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="toolbar-actions" style={{ display: 'flex', gap: '8px' }}>
@@ -336,20 +331,16 @@ export default function FileManager() {
                 currentPath={currentPathString}
                 currentFolderId={currentFolder ? currentFolder.id : 'root'}
                 onUploadStart={() => {
-                    console.log("Upload started");
                     setLoading(true);
                     setUploadProgress(0);
                 }}
                 onProgress={(progress) => setUploadProgress(progress)}
                 onUploadSuccess={() => {
-                    console.log("Upload success - waiting for sync");
                     setUploadProgress(100);
                     // Trigger might take a moment.
                     setTimeout(() => {
                         refreshFiles();
                         setUploadProgress(null);
-                        setLoading(false);
-                        showToast('Upload completed successfully', 'success');
                     }, 2000);
                 }}
             />
@@ -374,6 +365,7 @@ export default function FileManager() {
                 onRenameFolder={handleRenameFolder}
                 onDownload={handleDownload}
                 onRenameFile={handleRenameFile}
+                folderName={currentFolder?.name || 'Home'}
             />
         </div>
     );

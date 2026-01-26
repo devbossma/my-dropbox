@@ -7,7 +7,7 @@ import './FileUploader.css';
 
 interface FileUploaderProps {
     currentPath: string; // "user-files/{identityId}/folder1/folder2/"
-    currentFolderId: string; // Add this
+    currentFolderId: string;
     onUploadStart: () => void;
     onUploadSuccess: () => void;
     onProgress?: (progress: number) => void;
@@ -33,40 +33,35 @@ export default function FileUploader({ currentPath, currentFolderId, onUploadSta
         e.stopPropagation();
         setIsDragging(false);
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            console.log("Files dropped:", e.dataTransfer.files);
             handleUpload(Array.from(e.dataTransfer.files));
         }
     };
 
     const handleUpload = async (files: File[]) => {
-        console.log("Handle Upload called with:", files.length, "files");
-        console.log("Uploading to path:", currentPath);
         onUploadStart();
         try {
             // Get current user ID to set as owner
             const { userId } = await getCurrentUser();
 
             for (const file of files) {
-                console.log(`Starting upload for: ${file.name}`);
                 const operation = uploadData({
                     path: `${currentPath}${file.name}`,
                     data: file,
                     options: {
                         metadata: {
                             owner: userId,
-                            folderid: currentFolderId // Pass folder ID (S3 lowercases keys)
+                            folderid: currentFolderId,
+                            mimeType: file.type,
                         },
                         onProgress: ({ transferredBytes, totalBytes }) => {
                             if (totalBytes) {
                                 const percent = Math.round(transferredBytes / totalBytes * 100);
-                                console.log(`Upload progress ${percent}%`);
                                 onProgress?.(percent);
                             }
                         },
                     }
                 });
-                const result = await operation.result;
-                console.log('Upload Succeeded: ', result);
+                await operation.result;
             }
             onUploadSuccess();
         } catch (error) {

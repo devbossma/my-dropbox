@@ -26,6 +26,15 @@ const schema = a.schema({
       version: a.integer(), // Version number (starts at 1)
     })
     .authorization((allow) => [allow.owner()]),
+  UserProfile: a
+    .model({
+      displayName: a.string(),
+      email: a.string(),
+      plan: a.enum(['FREE', 'PREMIUM']),
+      avatarUrl: a.string(),
+      storageUsed: a.integer().default(0),
+    })
+    .authorization((allow) => [allow.owner()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

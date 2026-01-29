@@ -3,6 +3,7 @@ import { Authenticator, ThemeProvider, type Theme } from '@aws-amplify/ui-react'
 import '@aws-amplify/ui-react/styles.css';
 import { deleteUser } from 'aws-amplify/auth';
 import { generateClient } from 'aws-amplify/data';
+import { remove } from 'aws-amplify/storage';
 import type { Schema } from '../amplify/data/resource';
 
 import './App.css';
@@ -13,6 +14,7 @@ import { ToastProvider } from './components/Toast/Toast';
 import LoginBackground from './components/Login/LoginBackground';
 import Sidebar from './components/Sidebar/Sidebar';
 import Header from './components/Header/Header';
+import Profile from './components/Profile/Profile';
 import logoSvg from './assets/logo.svg';
 
 const client = generateClient<Schema>();
@@ -72,6 +74,8 @@ const theme: Theme = {
 
 function App() {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [currentView, setCurrentView] = useState<'files' | 'profile'>('files');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const deleteMe = async () => {
     const confirmed = window.confirm(
@@ -100,6 +104,30 @@ function App() {
         await client.models.Folder.delete({ id: folder.id });
       }
 
+      // 3. Clean up User Profile and Avatar
+      const { data: profiles } = await client.models.UserProfile.list();
+      if (profiles.length > 0) {
+        const profile = profiles[0];
+
+        if (profile.avatarUrl) {
+          try {
+            console.log(`Removing avatar from storage: ${profile.avatarUrl}`);
+            await remove({ path: profile.avatarUrl });
+          } catch (storageErr) {
+            console.warn("Failed to remove avatar image", storageErr);
+          }
+        }
+
+        console.log("Deleting UserProfile...");
+        await client.models.UserProfile.delete({ id: profile.id });
+      }
+
+      // 4. Clean up Storage (S3) could be done here if we had `list` permissions on the bucket root or specific paths
+      // However, usually detailed cleanup requires a Lambda trigger on User deletion.
+      // For this implementation, we will assume S3 lifecycle rules or manual cleanup for deep storage,
+      // BUT we can try to clean the avatar path if we know it.
+      // Note: listing specific S3 paths might require extra permissions.
+
       // 3. Delete the account
       console.log("Deleting user account...");
       await deleteUser();
@@ -123,14 +151,18 @@ function App() {
                 storageUsed="14.2 GB"
                 storageTotal="20 GB"
                 storagePercentage={71}
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+                currentView={currentView}
+                onViewChange={setCurrentView}
               />
 
               <main className="app-main">
                 <Header
                   user={user}
                   signOut={signOut || (() => { })}
-                  deleteMe={deleteMe}
-                  isDeleting={isDeleting as any}
+                  onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                  onViewChange={setCurrentView}
                 />
 
                 <div className="app-content">
@@ -143,7 +175,16 @@ function App() {
                       </div>
                     </div>
                   )}
-                  <FileManager />
+
+                  {currentView === 'files' ? (
+                    <FileManager />
+                  ) : (
+                    <Profile
+                      user={user}
+                      onDeleteAccount={deleteMe}
+                      isDeleting={isDeleting}
+                    />
+                  )}
                 </div>
               </main>
             </div>

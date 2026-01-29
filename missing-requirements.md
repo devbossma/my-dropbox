@@ -4,6 +4,7 @@
 2. Add a preview of the file should be shown when the user clicks on the file.
 3. Add shared link with an encrypted URL. 
 4. Add a expiration date system on the shared link.
+5. shared links they should be checked if the expiration date is been set and has passed or not before password check. if the expiration date has passed, the link should not be accessible anymore. 
 
 ## Enhanced Features:
 No Test Coverage - Missing unit tests for Lambda handlers and frontend components

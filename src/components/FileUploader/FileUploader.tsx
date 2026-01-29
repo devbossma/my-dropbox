@@ -3,6 +3,7 @@ import { uploadData } from 'aws-amplify/storage';
 import { getCurrentUser } from 'aws-amplify/auth';
 import { UploadCloud } from 'lucide-react';
 import { useToast } from '../Toast/Toast';
+import { formatBytes, hasEnoughStorage, getRemainingStorage } from '../../utils/storageUtils';
 import './FileUploader.css';
 
 interface FileUploaderProps {
@@ -11,9 +12,19 @@ interface FileUploaderProps {
     onUploadStart: () => void;
     onUploadSuccess: () => void;
     onProgress?: (progress: number) => void;
+    storageUsed: number;      // Current storage usage in bytes
+    storageLimit: number;     // Storage limit in bytes
 }
 
-export default function FileUploader({ currentPath, currentFolderId, onUploadStart, onUploadSuccess, onProgress }: FileUploaderProps) {
+export default function FileUploader({
+    currentPath,
+    currentFolderId,
+    onUploadStart,
+    onUploadSuccess,
+    onProgress,
+    storageUsed,
+    storageLimit
+}: FileUploaderProps) {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { showToast } = useToast();
@@ -38,6 +49,19 @@ export default function FileUploader({ currentPath, currentFolderId, onUploadSta
     };
 
     const handleUpload = async (files: File[]) => {
+        // Calculate total size of files to upload
+        const totalFilesSize = files.reduce((sum, file) => sum + file.size, 0);
+
+        // Check if there's enough storage
+        if (!hasEnoughStorage(storageUsed, totalFilesSize, storageLimit)) {
+            const remaining = getRemainingStorage(storageUsed, storageLimit);
+            showToast(
+                `Not enough storage. You need ${formatBytes(totalFilesSize)} but only have ${formatBytes(remaining)} available.`,
+                'error'
+            );
+            return;
+        }
+
         onUploadStart();
         try {
             // Get current user ID to set as owner

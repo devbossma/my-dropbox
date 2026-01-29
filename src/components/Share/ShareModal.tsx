@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Link as LinkIcon, Lock, Calendar, Copy, Check, Shield, Loader2 } from 'lucide-react';
 import { generateClient } from 'aws-amplify/data';
-import { copy } from 'aws-amplify/storage';
+import { copy, getUrl, uploadData } from 'aws-amplify/storage';
 import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import type { Schema } from '../../../amplify/data/resource';
@@ -51,10 +51,32 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, file }) => {
                     destination: { path: sharedS3Key }
                 });
             } catch (copyError) {
-                console.error("Copy failed:", copyError);
-                alert("Failed to prepare file for sharing. Please try again.");
-                setIsLoading(false);
-                return;
+                console.warn("Direct copy failed, attempting manual download/upload...", copyError);
+
+                try {
+                    // Fallback: Download then Upload
+                    const link = await getUrl({ path: file.s3Key });
+                    const response = await fetch(link.url);
+                    if (!response.ok) throw new Error('Failed to download source file');
+                    const blob = await response.blob();
+
+                    await uploadData({
+                        path: sharedS3Key,
+                        data: blob,
+                        options: {
+                            metadata: {
+                                originalName: file.fileName,
+                                shareId: shareId
+                            }
+                        }
+                    }).result;
+
+                } catch (fallbackError: any) {
+                    console.error("Fallback copy failed:", fallbackError);
+                    alert(`Failed to prepare file for sharing. Details: ${fallbackError.message || JSON.stringify(fallbackError)}`);
+                    setIsLoading(false);
+                    return;
+                }
             }
 
             setStatusMessage('Creating share link...');

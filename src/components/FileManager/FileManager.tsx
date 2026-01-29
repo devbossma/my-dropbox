@@ -17,7 +17,13 @@ const client = generateClient<Schema>();
 type Folder = Schema['Folder']['type'];
 type FileMetadata = Schema['FileMetadata']['type'];
 
-export default function FileManager() {
+interface FileManagerProps {
+    storageUsed: number;
+    storageLimit: number;
+    onStorageChange?: () => void;
+}
+
+export default function FileManager({ storageUsed, storageLimit, onStorageChange }: FileManagerProps) {
     const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
     const [breadcrumbs, setBreadcrumbs] = useState<Folder[]>([]);
     const [files, setFiles] = useState<FileMetadata[]>([]);
@@ -225,6 +231,8 @@ export default function FileManager() {
         try {
             await client.models.FileMetadata.delete({ id });
             refreshFiles();
+            // Trigger storage refresh after delete
+            setTimeout(() => onStorageChange?.(), 2000);
             showToast('File deleted successfully', 'success');
         } catch (error) {
             console.error("Delete file error", error);
@@ -365,6 +373,8 @@ export default function FileManager() {
             <FileUploader
                 currentPath={currentPathString}
                 currentFolderId={currentFolder ? currentFolder.id : 'root'}
+                storageUsed={storageUsed}
+                storageLimit={storageLimit}
                 onUploadStart={() => {
                     setLoading(true);
                     setUploadProgress(0);
@@ -375,6 +385,7 @@ export default function FileManager() {
                     // Trigger might take a moment.
                     setTimeout(() => {
                         refreshFiles();
+                        onStorageChange?.(); // Refresh storage after upload
                         setUploadProgress(null);
                     }, 2000);
                 }}

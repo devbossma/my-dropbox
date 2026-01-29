@@ -112,7 +112,35 @@
     height: 100%;
     background: var(--primary-color);
     border-radius: 3px;
-    transition: width 0.3s ease;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* Storage status colors */
+.storage-progress.storage-healthy {
+    background: #22c55e; /* Green */
+}
+
+.storage-progress.storage-warning {
+    background: #f59e0b; /* Orange */
+}
+
+.storage-progress.storage-critical {
+    background: #ef4444; /* Red */
+}
+
+/* Card border colors based on status */
+.storage-card.storage-warning {
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.storage-card.storage-critical {
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation: pulse-critical 2s ease-in-out infinite;
+}
+
+@keyframes pulse-critical {
+    0%, 100% { border-color: rgba(239, 68, 68, 0.3); }
+    50% { border-color: rgba(239, 68, 68, 0.6); }
 }
 
 .settings-btn {

@@ -56,6 +56,16 @@ const SharedFilePage: React.FC = () => {
         setError(null);
 
         try {
+            // Re-check expiration before processing
+            if (linkInfo.expiresAt) {
+                const expiry = new Date(linkInfo.expiresAt);
+                if (new Date() > expiry) {
+                    setError('This link has expired.');
+                    setAccessing(false);
+                    return;
+                }
+            }
+
             // Verify Password (client-side bcrypt compare)
             if (linkInfo.passwordHash) {
                 if (!password) {
@@ -80,13 +90,6 @@ const SharedFilePage: React.FC = () => {
             } catch (e) {
                 console.warn("Failed to update visit count", e);
             }
-
-            // Get the S3 presigned URL
-            // Note: For public access to work, the storage path needs guest access
-            // Since owner files are private, we'll need a different approach
-            // For now, show a message that download requires the owner to make it accessible
-
-            // Try to get URL (this might fail if not publicly accessible)
             try {
                 const urlResult = await getUrl({
                     path: linkInfo.s3Key,

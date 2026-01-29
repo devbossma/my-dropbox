@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Authenticator, ThemeProvider, type Theme } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import { deleteUser } from 'aws-amplify/auth';
@@ -18,6 +18,16 @@ import Header from './components/Header/Header';
 import Profile from './components/Profile/Profile';
 import SharedFilePage from './components/Share/SharedFilePage';
 import logoSvg from './assets/logo.svg';
+
+// Utils
+import {
+  formatBytes,
+  getStorageLimitBytes,
+  getStoragePercentage,
+  getStorageStatus,
+  type StoragePlan,
+  type StorageStatus
+} from './utils/storageUtils';
 
 const client = generateClient<Schema>();
 
@@ -78,6 +88,46 @@ function AuthenticatedApp() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentView, setCurrentView] = useState<'files' | 'profile'>('files');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Storage state
+  const [storageUsedBytes, setStorageUsedBytes] = useState(0);
+  const [userPlan, setUserPlan] = useState<StoragePlan>('FREE');
+
+  const storageLimitBytes = getStorageLimitBytes(userPlan);
+  const storagePercentage = getStoragePercentage(storageUsedBytes, storageLimitBytes);
+  const storageStatus: StorageStatus = getStorageStatus(storagePercentage);
+
+  // Fetch storage usage from UserProfile
+  const refreshStorageUsage = useCallback(async () => {
+    try {
+      // 1. Get Profile
+      const { data: profiles } = await client.models.UserProfile.list();
+
+      if (profiles && profiles.length > 0) {
+        const profile = profiles[0];
+        setStorageUsedBytes(profile.storageUsed || 0);
+        setUserPlan((profile.plan as StoragePlan) || 'FREE');
+
+        // 2. Background Sync (Self-healing)
+        // We run this quietly to ensure data consistency
+        import('./utils/storageSync').then(({ syncStorageUsage }) => {
+          syncStorageUsage(profile.id).then(realSize => {
+            if (realSize !== profile.storageUsed) {
+              console.log('Storage synced. Updating UI.');
+              setStorageUsedBytes(realSize);
+            }
+          }).catch(e => console.error("Storage sync failed", e));
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch storage usage:', error);
+    }
+  }, []);
+
+  // Fetch storage on mount
+  useEffect(() => {
+    refreshStorageUsage();
+  }, [refreshStorageUsage]);
 
   const deleteMe = async () => {
     const confirmed = window.confirm(
@@ -143,9 +193,10 @@ function AuthenticatedApp() {
           {({ signOut, user }) => (
             <div className="app-shell">
               <Sidebar
-                storageUsed="14.2 GB"
-                storageTotal="20 GB"
-                storagePercentage={71}
+                storageUsed={formatBytes(storageUsedBytes)}
+                storageTotal={formatBytes(storageLimitBytes)}
+                storagePercentage={storagePercentage}
+                storageStatus={storageStatus}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
                 currentView={currentView}
@@ -172,7 +223,8 @@ function AuthenticatedApp() {
                   )}
 
                   {currentView === 'files' ? (
-                    <FileManager />
+                    // storageUsed, storageLimit, onStorageChange
+                    <FileManager storageUsed={storageUsedBytes} storageLimit={storageLimitBytes} onStorageChange={refreshStorageUsage} />
                   ) : (
                     <Profile
                       user={user}

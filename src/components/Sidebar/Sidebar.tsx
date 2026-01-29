@@ -11,10 +11,13 @@ import {
 } from 'lucide-react';
 import './Sidebar.css';
 
+import type { StorageStatus } from '../../utils/storageUtils';
+
 interface SidebarProps {
     storageUsed: string;
     storageTotal: string;
     storagePercentage: number;
+    storageStatus: StorageStatus;
     isOpen: boolean;
     onClose: () => void;
     currentView: 'files' | 'profile';
@@ -25,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     storageUsed,
     storageTotal,
     storagePercentage,
+    storageStatus,
     isOpen,
     onClose,
     currentView,
@@ -79,7 +83,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </nav>
 
                 <div className="sidebar-footer">
-                    <div className="storage-card">
+                    <div className={`storage-card storage-${storageStatus}`}>
                         <div className="storage-info">
                             <HardDrive size={16} />
                             <span>Storage</span>
@@ -87,7 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                         <div className="storage-bar">
                             <div
-                                className="storage-progress"
+                                className={`storage-progress storage-${storageStatus}`}
                                 style={{ width: `${storagePercentage}%` }}
                             ></div>
                         </div>

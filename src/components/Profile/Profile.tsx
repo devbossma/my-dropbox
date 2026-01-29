@@ -5,6 +5,13 @@ import { generateClient } from 'aws-amplify/data';
 import { updatePassword, fetchAuthSession } from 'aws-amplify/auth';
 import { uploadData, getUrl } from 'aws-amplify/storage';
 import type { Schema } from '../../../amplify/data/resource';
+import {
+    formatBytes,
+    getStorageLimitBytes,
+    getStoragePercentage,
+    getStorageStatus,
+    type StoragePlan
+} from '../../utils/storageUtils';
 import './Profile.css';
 
 const client = generateClient<Schema>();
@@ -39,6 +46,12 @@ const Profile: React.FC<ProfileProps> = ({ user, onDeleteAccount, isDeleting }) 
     });
     const [passwordError, setPasswordError] = useState('');
     const [passwordSuccess, setPasswordSuccess] = useState('');
+
+    // Derived storage values
+    const userPlan = (profile?.plan as StoragePlan) || 'FREE';
+    const storageLimit = getStorageLimitBytes(userPlan);
+    const storagePercentage = getStoragePercentage(profile?.storageUsed || 0, storageLimit);
+    const storageStatus = getStorageStatus(storagePercentage);
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -224,8 +237,21 @@ const Profile: React.FC<ProfileProps> = ({ user, onDeleteAccount, isDeleting }) 
                     </div>
                     <div className="info-item">
                         <span className="info-label">Storage Used</span>
-                        {/* We will update this later to be dynamic based on real file usage */}
-                        <span className="info-value">{(profile?.storageUsed || 0) / 1024 / 1024} MB</span>
+                        <div className="storage-usage-container">
+                            <span className="info-value">{formatBytes(profile?.storageUsed || 0)} / {formatBytes(storageLimit)}</span>
+                            <div className="profile-storage-bar">
+                                <div
+                                    className={`profile-storage-progress storage-${storageStatus}`}
+                                    style={{ width: `${storagePercentage}%` }}
+                                ></div>
+                            </div>
+                            <div className="storage-details">
+                                <span>{storagePercentage}% used</span>
+                                <span className={`storage-status-badge storage-${storageStatus}`}>
+                                    {storageStatus === 'critical' ? 'Almost Full' : storageStatus === 'warning' ? 'Getting Full' : 'Healthy'}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                     <div className="info-item">
                         <span className="info-label">User ID</span>

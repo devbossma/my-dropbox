@@ -11,5 +11,5 @@ No File Sharing - Missing shareable links with permissions/expiration (core Drop
 Folder Rename Limitation - Only works for empty folders; should support recursive path updates
 
 ## UI/UX Features to Update:
-Hardcoded Storage Display - Shows "14.2 GB / 20 GB" instead of actual usage
+Hardcoded Storage Display - Shows "14.2 GB / 20 GB" instead of actual usage on the profile page annd sidebar.
 Lambda Error Handling - No dead-letter queues or retry policies for failed operations.

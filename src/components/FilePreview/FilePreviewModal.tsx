@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, FileText, Music, Image as ImageIcon, Film, File as FileIcon, ExternalLink } from 'lucide-react';
+import { X, Download, FileText, Music, File as FileIcon, ExternalLink } from 'lucide-react';
 import './FilePreviewModal.css';
 
 interface FilePreviewModalProps {

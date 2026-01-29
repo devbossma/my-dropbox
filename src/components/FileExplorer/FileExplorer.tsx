@@ -33,10 +33,32 @@ interface FileExplorerProps {
     folderName: string;
     onPreview?: (file: FileMetadata) => void;
     onShare?: (file: FileMetadata) => void;
+    onBulkDelete?: (files: FileMetadata[], folders: Folder[]) => void;
 }
 
-export default function FileExplorer({ files, folders, folderSizes, onNavigate, onDeleteFile, onDeleteFolder, onRenameFolder, onDownload, onRenameFile, folderName, onPreview, onShare }: FileExplorerProps) {
+export default function FileExplorer({ files, folders, folderSizes, onNavigate, onDeleteFile, onDeleteFolder, onRenameFolder, onDownload, onRenameFile, folderName, onPreview, onShare, onBulkDelete }: FileExplorerProps) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    // Clear selection on navigation
+    useMemo(() => {
+        setSelectedIds(new Set());
+    }, [folders, files]); // When content changes (nav), clear selection.
+
+    const toggleSelection = (id: string) => {
+        const newSet = new Set(selectedIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedIds(newSet);
+    };
+
+    const handleBulkAction = () => {
+        if (!onBulkDelete) return;
+        const selectedFilesList = files.filter(f => selectedIds.has(f.id));
+        const selectedFoldersList = folders.filter(f => selectedIds.has(f.id));
+        onBulkDelete(selectedFilesList, selectedFoldersList);
+        setSelectedIds(new Set());
+    };
 
     const filteredFolders = useMemo(() =>
         folders.filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())),
@@ -91,12 +113,21 @@ export default function FileExplorer({ files, folders, folderSizes, onNavigate, 
                         className="search-input"
                     />
                 </div>
+                {selectedIds.size > 0 && (
+                    <button className="bulk-delete-btn" onClick={handleBulkAction}>
+                        <Trash2 size={16} />
+                        Delete ({selectedIds.size})
+                    </button>
+                )}
             </div>
 
             <div className="grid-body">
                 {/* Folders */}
                 {filteredFolders.map(folder => (
-                    <div key={folder.id} className="grid-item folder-item" onClick={() => onNavigate(folder)}>
+                    <div key={folder.id} className={`grid-item folder-item ${selectedIds.has(folder.id) ? 'selected' : ''}`} onClick={() => onNavigate(folder)}>
+                        <div className="selection-checkbox" onClick={(e) => { e.stopPropagation(); toggleSelection(folder.id); }}>
+                            <input type="checkbox" checked={selectedIds.has(folder.id)} readOnly />
+                        </div>
                         <div className="item-icon-wrapper">
                             <FontAwesomeIcon icon={faFolderSolid} className="item-icon folder-icon-grid" style={{ fontSize: '48px' }} />
                             <div className="item-actions">
@@ -121,7 +152,10 @@ export default function FileExplorer({ files, folders, folderSizes, onNavigate, 
 
                 {/* Files */}
                 {filteredFiles.map(file => (
-                    <div key={file.id} className="grid-item file-item" onClick={() => onPreview && onPreview(file)}>
+                    <div key={file.id} className={`grid-item file-item ${selectedIds.has(file.id) ? 'selected' : ''}`} onClick={() => onPreview && onPreview(file)}>
+                        <div className="selection-checkbox" onClick={(e) => { e.stopPropagation(); toggleSelection(file.id); }}>
+                            <input type="checkbox" checked={selectedIds.has(file.id)} readOnly />
+                        </div>
                         {file.version !== undefined && file.version !== null && (
                             <span className="version-badge">v{file.version}</span>
                         )}

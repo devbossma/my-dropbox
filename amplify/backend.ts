@@ -5,9 +5,12 @@ import { storage } from './storage/resource';
 import { s3Trigger } from './functions/s3-trigger/resource';
 import { dynamoTrigger } from './functions/dynamo-trigger/resource';
 import { EventType, HttpMethods, Bucket } from 'aws-cdk-lib/aws-s3';
+import { Queue } from 'aws-cdk-lib/aws-sqs';
+import { Duration } from 'aws-cdk-lib';
+import { SqsDestination } from 'aws-cdk-lib/aws-lambda-destinations';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import { Function as LambdaFunction, StartingPosition } from 'aws-cdk-lib/aws-lambda';
-import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { DynamoEventSource, SqsDlq } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 const backend = defineBackend({
   auth,
@@ -25,6 +28,11 @@ const s3Bucket = backend.storage.resources.bucket;
 const fileMetadataTable = backend.data.resources.tables['FileMetadata'];
 const userProfileTable = backend.data.resources.tables['UserProfile'];
 
+// --- Dead Letter Queue for Failures ---
+const dlq = new Queue(s3Bucket.stack, 'LambdaDLQ', {
+  retentionPeriod: Duration.days(14)
+});
+
 // 1. Trigger S3 -> Lambda -> DynamoDB
 const s3TriggerLambda = backend.s3Trigger.resources.lambda as LambdaFunction;
 s3TriggerLambda.addEnvironment('TABLE_NAME', fileMetadataTable.tableName);
@@ -38,6 +46,12 @@ s3Bucket.addEventNotification(
   EventType.OBJECT_CREATED,
   new LambdaDestination(s3TriggerLambda)
 );
+
+// Configure Async Retry & DLQ
+s3TriggerLambda.configureAsyncInvoke({
+  retryAttempts: 2,
+  onFailure: new SqsDestination(dlq)
+});
 
 // --- DynamoDB Trigger Configuration ---
 // 2. Trigger DynamoDB -> Lambda -> S3
@@ -53,6 +67,9 @@ userProfileTable.grantReadWriteData(dynamoTriggerLambda); // Required for updati
 // Enable Streams on the table via DynamoEventSource
 dynamoTriggerLambda.addEventSource(new DynamoEventSource(fileMetadataTable, {
   startingPosition: StartingPosition.LATEST,
+  bisectBatchOnError: true,
+  retryAttempts: 5,
+  onFailure: new SqsDlq(dlq),
 }));
 
 // --- CORS Configuration ---

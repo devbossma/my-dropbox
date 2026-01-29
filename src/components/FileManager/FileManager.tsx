@@ -216,6 +216,36 @@ export default function FileManager({ storageUsed, storageLimit, onStorageChange
         }
     };
 
+    const handleBulkDelete = async (selectedFiles: FileMetadata[], selectedFolders: Folder[]) => {
+        const count = selectedFiles.length + selectedFolders.length;
+        if (count === 0) return;
+
+        if (!confirm(`Are you sure you want to delete ${count} item(s)? This cannot be undone.`)) return;
+
+        setLoading(true);
+        try {
+            // Delete Folders Recursively
+            for (const folder of selectedFolders) {
+                await deleteFolderRecursively(folder.id);
+                await client.models.Folder.delete({ id: folder.id });
+            }
+
+            // Delete Files
+            for (const file of selectedFiles) {
+                await client.models.FileMetadata.delete({ id: file.id });
+            }
+
+            refreshFiles();
+            setTimeout(() => onStorageChange?.(), 2000);
+            showToast('Items deleted successfully', 'success');
+        } catch (error) {
+            console.error("Bulk delete error", error);
+            showToast('Failed to delete items', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     const handleRenameFile = async (id: string, currentName: string) => {
         const newName = prompt("Enter new file name:", currentName);
@@ -390,6 +420,7 @@ export default function FileManager({ storageUsed, storageLimit, onStorageChange
                 folderName={currentFolder?.name || 'Home'}
                 onPreview={handlePreview}
                 onShare={handleShare}
+                onBulkDelete={handleBulkDelete}
             />
 
             <FilePreviewModal

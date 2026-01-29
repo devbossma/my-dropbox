@@ -219,3 +219,54 @@
         gap: 1rem;
     }
 }
+
+/* Selection & Bulk Actions */
+.selection-checkbox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 20;
+    opacity: 0;
+    transition: all 0.2s;
+    transform: scale(0.8);
+}
+
+.grid-item:hover .selection-checkbox,
+.grid-item.selected .selection-checkbox {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.selection-checkbox input {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+}
+
+.grid-item.selected {
+    background: rgba(59, 130, 246, 0.1) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.bulk-delete-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    height: 38px;
+}
+
+.bulk-delete-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    transform: translateY(-1px);
+}

@@ -10,6 +10,7 @@ import FilePreviewModal from '../FilePreview/FilePreviewModal';
 import ShareModal from '../Share/ShareModal';
 import { FolderPlus, Home, ChevronRight } from 'lucide-react';
 import { useToast } from '../Toast/Toast';
+import { deleteFolderRecursively, renameFolderRecursively } from '../../utils/folderOperations';
 import './FileManager.css';
 
 const client = generateClient<Schema>();
@@ -140,88 +141,63 @@ export default function FileManager({ storageUsed, storageLimit, onStorageChange
     };
 
     const handleDeleteFolder = async (folderId: string) => {
-        // Check for children (Files)
-        const { data: files } = await client.models.FileMetadata.list({
-            filter: { folderId: { eq: folderId } }
-        });
+        if (!confirm("Are you sure you want to delete this folder and ALL its contents? This cannot be undone.")) return;
 
-        // Check for children (Folders)
-        const { data: subFolders } = await client.models.Folder.list({
-            filter: { parentFolderId: { eq: folderId } }
-        });
-
-        const activeFiles = files.filter(f => !f.isDeleted);
-
-        if (activeFiles.length > 0 || subFolders.length > 0) {
-            alert(
-                "This folder is not empty.\n\n" +
-                `Contents: ${activeFiles.length} file(s), ${subFolders.length} subfolder(s)\n\n` +
-                "This version does not support deleting non-empty folders. " +
-                "Please navigate into the folder and delete all files and subfolders first."
-            );
-            return;
-        }
-
-        if (!confirm("Are you sure you want to delete this empty folder?")) return;
-
+        setLoading(true);
         try {
+            // Recursive delete of content
+            await deleteFolderRecursively(folderId);
+
+            // Delete the folder itself
             await client.models.Folder.delete({ id: folderId });
+
             refreshFiles();
+            // Trigger storage refresh (files were deleted)
+            setTimeout(() => onStorageChange?.(), 2000);
             showToast('Folder deleted successfully', 'success');
         } catch (error) {
             console.error("Delete folder error", error);
             showToast('Failed to delete folder', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleRenameFolder = async (folderId: string, currentName: string) => {
-        // Check for children (Files)
-        const { data: files } = await client.models.FileMetadata.list({
-            filter: { folderId: { eq: folderId } }
-        });
-
-        // Check for children (Folders)
-        const { data: subFolders } = await client.models.Folder.list({
-            filter: { parentFolderId: { eq: folderId } }
-        });
-
-        const activeFiles = files.filter(f => !f.isDeleted);
-
-        if (activeFiles.length > 0 || subFolders.length > 0) {
-            alert("Cannot rename non-empty folder.");
-            return;
-        }
-
         const newName = prompt("Enter new folder name:", currentName);
         if (!newName || newName === currentName) return;
 
-        // Note: Renaming requires updating 'path'. Since it's empty, we assume path is just proper parent + name.
-        // But if 'path' logic is complex, we need to replicate it.
-        // Here we assume path = parentPath + name. But we need to fetch current folder to know parentPath.
-        // For MVP, if empty, we might just update name? But path is required. 
-        // Let's fetch the folder first.
+        setLoading(true);
         try {
+            // 1. Get current folder to know full path
             const { data: folder } = await client.models.Folder.get({ id: folderId });
-            if (!folder) return;
+            if (!folder || !identityId) return;
 
-            // Construct new path. 
-            // Old path: "parent/oldName"
-            // New path: "parent/newName"
-            const pathParts = folder.path.split('/');
+            const oldPath = folder.path;
+
+            // Construct new path
+            const pathParts = oldPath.split('/');
             pathParts.pop(); // remove old name
             pathParts.push(newName);
             const newPath = pathParts.join('/');
 
+            // 2. Rename Recursively (Files & Subfolders)
+            await renameFolderRecursively(folderId, oldPath, newPath, identityId);
+
+            // 3. Update the folder itself
             await client.models.Folder.update({
                 id: folderId,
                 name: newName,
                 path: newPath
             });
+
             refreshFiles();
             showToast('Folder renamed successfully', 'success');
         } catch (error) {
             console.error("Rename folder error", error);
             showToast('Failed to rename folder', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 

@@ -35,6 +35,19 @@ const schema = a.schema({
       storageUsed: a.integer().default(0),
     })
     .authorization((allow) => [allow.owner()]),
+  ShareLink: a
+    .model({
+      fileId: a.string().required(), // Reference to FileMetadata.id
+      s3Key: a.string().required(), // Cached S3 Key for presigning
+      fileName: a.string(),
+      passwordHash: a.string(), // Optional: only if password protected
+      expiresAt: a.datetime(),
+      visitCount: a.integer().default(0),
+    })
+    .authorization((allow) => [
+      allow.owner(),
+      allow.publicApiKey().to(['read', 'update']), // Public can read to check and update visit count
+    ]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -43,5 +56,8 @@ export const data = defineData({
   schema,
   authorizationModes: {
     defaultAuthorizationMode: 'userPool',
+    apiKeyAuthorizationMode: {
+      expiresInDays: 30,
+    },
   },
 });

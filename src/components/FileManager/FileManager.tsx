@@ -6,6 +6,8 @@ import { Loader } from '@aws-amplify/ui-react';
 import type { Schema } from '../../../amplify/data/resource';
 import FileExplorer from '../FileExplorer/FileExplorer';
 import FileUploader from '../FileUploader/FileUploader';
+import FilePreviewModal from '../FilePreview/FilePreviewModal';
+import ShareModal from '../Share/ShareModal';
 import { FolderPlus, Home, ChevronRight } from 'lucide-react';
 import { useToast } from '../Toast/Toast';
 import './FileManager.css';
@@ -26,6 +28,11 @@ export default function FileManager() {
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const { showToast } = useToast();
+
+    // Preview State
+    const [previewFile, setPreviewFile] = useState<FileMetadata | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     const refreshFiles = () => {
         setRefreshTrigger(prev => prev + 1);
@@ -289,6 +296,34 @@ export default function FileManager() {
         }
     };
 
+    const handlePreview = async (file: FileMetadata) => {
+        setPreviewFile(file);
+        setIsPreviewOpen(true);
+        setPreviewUrl(null); // Reset while loading
+
+        if (!file.s3Key) {
+            console.error("No s3Key for file", file);
+            return;
+        }
+
+        try {
+            const link = await getUrl({ path: file.s3Key });
+            setPreviewUrl(link.url.toString());
+        } catch (error) {
+            console.error("Failed to get preview URL", error);
+            showToast("Failed to load preview", "error");
+        }
+    };
+
+    // Share Handler
+    const [shareFile, setShareFile] = useState<FileMetadata | null>(null);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+    const handleShare = (file: FileMetadata) => {
+        setShareFile(file);
+        setIsShareModalOpen(true);
+    };
+
     if (!identityId) return <div className="loading">Initializing Session...</div>;
 
     const currentPathString = currentFolder
@@ -366,6 +401,22 @@ export default function FileManager() {
                 onDownload={handleDownload}
                 onRenameFile={handleRenameFile}
                 folderName={currentFolder?.name || 'Home'}
+                onPreview={handlePreview}
+                onShare={handleShare}
+            />
+
+            <FilePreviewModal
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                file={previewFile}
+                fileUrl={previewUrl}
+                onDownload={() => previewFile?.s3Key && handleDownload(previewFile.s3Key)}
+            />
+
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                file={shareFile}
             />
         </div>
     );

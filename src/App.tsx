@@ -4,6 +4,7 @@ import '@aws-amplify/ui-react/styles.css';
 import { deleteUser } from 'aws-amplify/auth';
 import { generateClient } from 'aws-amplify/data';
 import { remove } from 'aws-amplify/storage';
+import { Routes, Route } from 'react-router-dom';
 import type { Schema } from '../amplify/data/resource';
 
 import './App.css';
@@ -15,6 +16,7 @@ import LoginBackground from './components/Login/LoginBackground';
 import Sidebar from './components/Sidebar/Sidebar';
 import Header from './components/Header/Header';
 import Profile from './components/Profile/Profile';
+import SharedFilePage from './components/Share/SharedFilePage';
 import logoSvg from './assets/logo.svg';
 
 const client = generateClient<Schema>();
@@ -72,7 +74,7 @@ const theme: Theme = {
   },
 };
 
-function App() {
+function AuthenticatedApp() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentView, setCurrentView] = useState<'files' | 'profile'>('files');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -122,17 +124,10 @@ function App() {
         await client.models.UserProfile.delete({ id: profile.id });
       }
 
-      // 4. Clean up Storage (S3) could be done here if we had `list` permissions on the bucket root or specific paths
-      // However, usually detailed cleanup requires a Lambda trigger on User deletion.
-      // For this implementation, we will assume S3 lifecycle rules or manual cleanup for deep storage,
-      // BUT we can try to clean the avatar path if we know it.
-      // Note: listing specific S3 paths might require extra permissions.
-
-      // 3. Delete the account
+      // 4. Delete the account
       console.log("Deleting user account...");
       await deleteUser();
 
-      // The page will likely reload or redirect upon account deletion success
     } catch (error) {
       console.error('Error during cleanup and account deletion:', error);
       alert("An error occurred while deleting your account. Please try again.");
@@ -192,6 +187,15 @@ function App() {
         </Authenticator>
       </ToastProvider>
     </ThemeProvider>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/s/:linkId" element={<SharedFilePage />} />
+      <Route path="*" element={<AuthenticatedApp />} />
+    </Routes>
   );
 }
 

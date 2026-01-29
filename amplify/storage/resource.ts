@@ -10,6 +10,10 @@ export const storage = defineStorage({
             allow.entity('identity').to(['read', 'write', 'delete']),
             allow.guest.to(['read']),
             allow.authenticated.to(['read'])
+        ],
+        'shared-files/*': [
+            allow.authenticated.to(['read', 'write', 'delete']), // Owners can put files here
+            allow.guest.to(['read']) // Guests can read shared files
         ]
     })
 });

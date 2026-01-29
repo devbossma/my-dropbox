@@ -1,0 +1,186 @@
+/* FilePreviewModal.css */
+.preview-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85); /* Darker backdrop for better viewing */
+    backdrop-filter: blur(8px);
+    z-index: 2000; /* Higher than other modals */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease-out forwards;
+}
+
+.preview-container {
+    background: #1e293b;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    width: 90vw;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    animation: scaleIn 0.2s ease-out forwards;
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Header */
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+.preview-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.preview-filename {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.preview-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.preview-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.preview-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.preview-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+.preview-btn.close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Content Area */
+.preview-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0f172a; /* Dark background for content */
+    overflow: hidden;
+    position: relative;
+    padding: 1rem;
+}
+
+/* Media Types */
+.preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.preview-video {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+    outline: none;
+}
+
+.preview-pdf, .preview-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white; /* PDF needs white background usually */
+    border-radius: 8px;
+}
+
+.preview-audio-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+    background: #1e293b;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.audio-icon-large {
+    color: var(--primary-color);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.preview-audio {
+    width: 100%;
+}
+
+/* Error/Unsupported */
+.preview-unsupported {
+    text-align: center;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.preview-unsupported p {
+    font-size: 1.1rem;
+}
+
+.download-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.download-link:hover {
+    text-decoration: underline;
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

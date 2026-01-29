@@ -49,3 +49,4 @@ fileMetadataTable.grantWriteData(dynamoTriggerLambda); // Grant Write Access
 dynamoTriggerLambda.addEventSource(new DynamoEventSource(fileMetadataTable, {
   startingPosition: StartingPosition.LATEST,
 }));
+

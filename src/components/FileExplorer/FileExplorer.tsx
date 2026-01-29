@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Trash2, Download, Edit2, Search, ChevronDown } from 'lucide-react';
+import { Trash2, Download, Edit2, Search, ChevronDown, Eye, Link as LinkIcon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faFile,
@@ -31,9 +31,11 @@ interface FileExplorerProps {
     onDownload: (key: string) => void;
     onRenameFile: (id: string, currentName: string) => void;
     folderName: string;
+    onPreview?: (file: FileMetadata) => void;
+    onShare?: (file: FileMetadata) => void;
 }
 
-export default function FileExplorer({ files, folders, folderSizes, onNavigate, onDeleteFile, onDeleteFolder, onRenameFolder, onDownload, onRenameFile, folderName }: FileExplorerProps) {
+export default function FileExplorer({ files, folders, folderSizes, onNavigate, onDeleteFile, onDeleteFolder, onRenameFolder, onDownload, onRenameFile, folderName, onPreview, onShare }: FileExplorerProps) {
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredFolders = useMemo(() =>
@@ -119,13 +121,19 @@ export default function FileExplorer({ files, folders, folderSizes, onNavigate, 
 
                 {/* Files */}
                 {filteredFiles.map(file => (
-                    <div key={file.id} className="grid-item file-item">
+                    <div key={file.id} className="grid-item file-item" onClick={() => onPreview && onPreview(file)}>
                         {file.version !== undefined && file.version !== null && (
                             <span className="version-badge">v{file.version}</span>
                         )}
                         <div className="item-icon-wrapper">
                             <FontAwesomeIcon icon={getFileIcon(file.mimeType, file.fileName)} className="item-icon file-icon-grid" style={{ fontSize: '48px' }} />
                             <div className="item-actions">
+                                <button className="mini-btn" onClick={(e) => { e.stopPropagation(); if (onPreview) onPreview(file); }} title="Preview">
+                                    <Eye size={14} />
+                                </button>
+                                <button className="mini-btn" onClick={(e) => { e.stopPropagation(); if (onShare) onShare(file); }} title="Share">
+                                    <LinkIcon size={14} />
+                                </button>
                                 <button className="mini-btn" onClick={(e) => { e.stopPropagation(); onDownload(file.s3Key); }} title="Download" >
                                     <Download size={14} />
                                 </button>

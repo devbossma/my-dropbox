@@ -1,7 +1,7 @@
 import { S3Client, CopyObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { DynamoDBClient, AttributeValue } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, type AttributeValue } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, DeleteCommand, ScanCommand, UpdateCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { DynamoDBStreamEvent } from 'aws-lambda';
+import type { DynamoDBStreamEvent } from 'aws-lambda';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 const client = new DynamoDBClient({});

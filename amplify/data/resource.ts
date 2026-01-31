@@ -25,6 +25,7 @@ const schema = a.schema({
       owner: a.string(), // Explicitly defined to ensure Trigger can write to it matchingly
       version: a.integer(), // Version number (starts at 1)
     })
+    .secondaryIndexes((index) => [index('s3Key')])
     .authorization((allow) => [allow.owner()]),
   UserProfile: a
     .model({

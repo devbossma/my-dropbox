@@ -209,6 +209,9 @@ dynamoTrigger Lambda:
 - IntelliSense support for all operations
 
 - **S3 Orphan Prevention**: Automatic Lambda trigger ensures physical files are removed after DB cleanup.
+- **Shared Links**: Secure file sharing with password protection and expiration dates.
+- **File Previews**: Built-in preview for images, videos, audio, PDF, and code files.
+- **User Profile**: Manage account settings, view real-time storage usage, and update avatar.
 
 **6. Premium UI/UX & Immersive Experience**
 - **Modern Application Shell**: A professional sidebar-based layout with a fixed navigation rail and a sticky, contextual top bar.
@@ -649,11 +652,18 @@ my-dropbox/
 │   ├── components/
 │   │   ├── FileExplorer/            # Icon-based file browser
 │   │   ├── FileManager/             # Core state management
+│   │   ├── FilePreview/             # File Preview Modal
 │   │   ├── FileUploader/            # Drag & Drop uploads
 │   │   ├── Header/                  # Top bar with User Menu
 │   │   ├── Login/                   # Immersive background animation
+│   │   ├── Profile/                 # User Profile & Settings
+│   │   ├── Share/                   # Shared Links & Password Protection
 │   │   ├── Sidebar/                 # Navigation & Storage monitor
 │   │   └── Toast/                   # Notification system
+│   ├── utils/
+│   │   ├── folderOperations.ts      # Recursive Rename/Delete
+│   │   ├── profileUtils.ts          # Profile Management
+│   │   └── storageUtils.ts          # Storage Calculations
 │   ├── App.tsx                      # Root component & Application Shell
 │   ├── App.css                      # Navigation Rail & Top Bar layouts
 │   ├── index.css                    # Design Tokens & Global Styles

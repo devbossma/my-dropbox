@@ -167,9 +167,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onDeleteAccount, isDeleting }) 
                 setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
                 setPasswordSuccess('');
             }, 2000);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Password update failed:', err);
-            setPasswordError(err.message || "Failed to update password. Check your old password.");
+            setPasswordError(err instanceof Error ? err.message : "Failed to update password. Check your old password.");
         }
     };
 

@@ -71,9 +71,9 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, file }) => {
                         }
                     }).result;
 
-                } catch (fallbackError: any) {
+                } catch (fallbackError: unknown) {
                     console.error("Fallback copy failed:", fallbackError);
-                    alert(`Failed to prepare file for sharing. Details: ${fallbackError.message || JSON.stringify(fallbackError)}`);
+                    alert(`Failed to prepare file for sharing. Details: ${fallbackError instanceof Error ? fallbackError.message : JSON.stringify(fallbackError)}`);
                     setIsLoading(false);
                     return;
                 }

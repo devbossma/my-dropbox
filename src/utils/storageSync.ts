@@ -8,25 +8,17 @@ const client = generateClient<Schema>();
  * and updates the UserProfile.storageUsed field.
  * Returns the calculated total size in bytes.
  */
-export async function syncStorageUsage(_userId: string): Promise<number> {
+export async function syncStorageUsage(): Promise<number> {
     try {
         console.log('Starting storage sync...');
 
-        // 1. Fetch all active files (not deleted)
-        // Note: list() has pagination, by default returns 100? or all? 
-        // We should handle pagination if we expect many files, but for now list() auto-paginates?
-        // Amplify Gen 2 Data client list() auto-paginates? No, it returns a page.
-        // We should use observeQuery or a loop.
-        // For simplicity with list(), we can set a high limit or loop tokens. 
-        // Let's assume reasonable number of files for MVP or use a loop.
-
         let allFiles: Array<Schema['FileMetadata']['type']> = [];
-        let nextToken: string | undefined | null = undefined;
+        let nextToken: string | null | undefined = undefined;
 
         // Loop to fetch all pages
         while (true) {
-            const response: any = await client.models.FileMetadata.list({
-                nextToken,
+            const response: { data: Array<Schema['FileMetadata']['type']>; nextToken?: string | null } = await client.models.FileMetadata.list({
+                nextToken: nextToken ?? undefined,
                 limit: 1000,
                 filter: {
                     isDeleted: { ne: true } // Only count active files

@@ -69,10 +69,14 @@ export default function FileManager({ storageUsed, storageLimit, onStorageChange
 
     // Get Identity ID for S3 paths
     useEffect(() => {
+        console.log('FileManager: [hook] Calling fetchAuthSession');
         fetchAuthSession().then(session => {
+            console.log('FileManager: [hook] Received session, identityId:', session.identityId);
             if (session.identityId) {
                 setIdentityId(session.identityId);
             }
+        }).catch(err => {
+            console.error('FileManager: [hook] Auth session error:', err);
         });
     }, []);
 
@@ -109,7 +113,43 @@ export default function FileManager({ storageUsed, storageLimit, onStorageChange
             next: ({ items }) => {
                 // Filter out deleted files if we used soft delete
                 const activeFiles = items.filter(f => !f.isDeleted);
-                setFiles(activeFiles);
+
+                // DEDUPLICATE by s3Key - keep only the record with highest version or most recent
+                const deduplicatedMap = new Map<string, typeof activeFiles[0]>();
+                activeFiles.forEach(file => {
+                    const existing = deduplicatedMap.get(file.s3Key);
+                    if (!existing) {
+                        deduplicatedMap.set(file.s3Key, file);
+                    } else {
+                        // Keep the one with higher version, or if same version, keep newer createdAt
+                        const fileVersion = file.version || 0;
+                        const existingVersion = existing.version || 0;
+                        if (fileVersion > existingVersion) {
+                            deduplicatedMap.set(file.s3Key, file);
+                        } else if (fileVersion === existingVersion && file.createdAt > existing.createdAt) {
+                            deduplicatedMap.set(file.s3Key, file);
+                        }
+                    }
+                });
+                const deduplicated = Array.from(deduplicatedMap.values());
+
+                // LOG ALL FILES IN CURRENT FOLDER
+                console.log(`\n=== FILES IN CURRENT FOLDER (${folderId ?? 'root'}) ===`);
+                console.log(`Total items: ${items.length}, Active: ${activeFiles.length}, After dedup: ${deduplicated.length}`);
+                if (activeFiles.length !== deduplicated.length) {
+                    console.warn(`⚠️ DUPLICATES DETECTED! Removed ${activeFiles.length - deduplicated.length} duplicate(s)`);
+                }
+                deduplicated.forEach((file, idx) => {
+                    console.log(`[${idx + 1}] ${file.fileName}`);
+                    console.log(`    ID: ${file.id}`);
+                    console.log(`    s3Key: ${file.s3Key}`);
+                    console.log(`    Version: ${file.version || 'N/A'}`);
+                    console.log(`    Size: ${file.fileSize} bytes`);
+                    console.log(`    Created: ${file.createdAt}`);
+                });
+                console.log(`===================\n`);
+
+                setFiles(deduplicated);
                 setLoading(false);
             },
             error: (err) => console.error('File sub error', err)

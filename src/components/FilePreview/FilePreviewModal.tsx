@@ -20,6 +20,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ isOpen, onClose, fi
 
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line
             setLoading(true);
             setError(false);
         }

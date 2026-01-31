@@ -83,6 +83,6 @@ dynamoTriggerLambda.addEventSource(new DynamoEventSource(fileMetadataTable, {
   ],
   allowedOrigins: ['*'], // Allow all domains including localhost
   allowedHeaders: ['*'],
-  exposedHeaders: ['ETag', 'x-amz-meta-firstname', 'x-amz-meta-lastname'],
+  exposedHeaders: ['ETag'],
 });
 

@@ -105,9 +105,9 @@ const SharedFilePage: React.FC = () => {
                 setError('File is not publicly accessible. The owner needs to enable sharing for this file.');
             }
 
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error("Access failed", e);
-            setError(e.message || "Failed to access file.");
+            setError(e instanceof Error ? e.message : "Failed to access file.");
         } finally {
             setAccessing(false);
         }

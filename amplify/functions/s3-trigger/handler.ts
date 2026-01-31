@@ -8,30 +8,25 @@ const docClient = DynamoDBDocumentClient.from(client);
 const s3Client = new S3Client({});
 
 export const handler = async (event: S3Event) => {
-    console.log('Processed S3 Event:', JSON.stringify(event, null, 2));
     const tableName = process.env.TABLE_NAME;
     const userProfileTableName = process.env.USER_PROFILE_TABLE_NAME;
 
-    if (!tableName) {
-        throw new Error('TABLE_NAME is not set');
-    }
+    if (!tableName) throw new Error('TABLE_NAME is not set');
 
     for (const record of event.Records) {
         const s3 = record.s3;
         const key = decodeURIComponent(s3.object.key.replace(/\+/g, " "));
-        const size = s3.object.size;
+        const size = s3.object.size || 0;
         const bucket = s3.bucket.name;
 
         const parts = key.split('/');
         const fileName = parts.pop() || key;
         const folderPath = parts.join('/');
 
-        // Determine folderId (Initial Logic / Fallback)
         const isRoot = parts.length === 2 && parts[0] === 'user-files';
         let folderId = isRoot ? 'root' : undefined;
         let mimeType = 'unknown';
 
-        // Fetch Metadata to get Owner and FolderID
         let owner = 'unknown';
         try {
             const headData = await s3Client.send(new HeadObjectCommand({
@@ -39,41 +34,36 @@ export const handler = async (event: S3Event) => {
                 Key: key
             }));
 
-            // Check Owner
-            if (headData.Metadata && headData.Metadata.owner) {
-                owner = headData.Metadata.owner;
-                console.log(`Found owner in metadata: ${owner}`);
-            }
+            if (headData.Metadata) {
+                owner = headData.Metadata.owner || 'unknown';
+                folderId = headData.Metadata.folderid || folderId;
+                mimeType = headData.Metadata.mimetype || 'unknown';
 
-            // Check FolderID
-            // Note: S3 metadata keys are lowercase
-            if (headData.Metadata && headData.Metadata.folderid) {
-                folderId = headData.Metadata.folderid;
-                console.log(`Found folderid in metadata: ${folderId}`);
-            }
-
-            if (headData.Metadata && headData.Metadata.mimetype) {
-                mimeType = headData.Metadata.mimetype;
-                console.log(`Found mimetype in metadata: ${mimeType}`);
+                if (headData.Metadata['skip-db-trigger'] === 'true') {
+                    console.log(`Skipping DB trigger for ${key}`);
+                    continue;
+                }
             }
         } catch (err) {
             console.error('Error fetching S3 metadata:', err);
         }
 
-        // Handle ObjectCreated
         if (record.eventName.startsWith('ObjectCreated')) {
-            // Check for existing version
+            // Check for existing version - SIMPLE LOOKUP using s3Key as ID
             let version = 1;
             let previousFileSize = 0;
+            let existingCreatedAt: string | undefined;
+
             try {
                 const existingItem = await docClient.send(new GetCommand({
                     TableName: tableName,
-                    Key: { id: key }
+                    Key: { id: key }  // id = s3Key (original working model)
                 }));
 
-                if (existingItem.Item && existingItem.Item.version) {
-                    version = existingItem.Item.version + 1;
+                if (existingItem.Item) {
+                    version = (existingItem.Item.version || 0) + 1;
                     previousFileSize = existingItem.Item.fileSize || 0;
+                    existingCreatedAt = existingItem.Item.createdAt;
                     console.log(`File exists. Incrementing version from ${existingItem.Item.version} to ${version}`);
                 }
             } catch (err) {
@@ -83,7 +73,7 @@ export const handler = async (event: S3Event) => {
             await docClient.send(new PutCommand({
                 TableName: tableName,
                 Item: {
-                    id: key,
+                    id: key,  // id = s3Key (simple and reliable)
                     fileName: fileName,
                     fileSize: size,
                     s3Key: key,
@@ -91,7 +81,7 @@ export const handler = async (event: S3Event) => {
                     folderPath: folderPath,
                     folderId: folderId,
                     lastModified: Date.now(),
-                    createdAt: new Date().toISOString(),
+                    createdAt: existingCreatedAt || new Date().toISOString(),  // Preserve original createdAt
                     updatedAt: new Date().toISOString(),
                     owner: owner,
                     isDeleted: false,
@@ -102,34 +92,29 @@ export const handler = async (event: S3Event) => {
             // Update UserProfile storage usage
             if (userProfileTableName && owner !== 'unknown') {
                 try {
-                    // Calculate size difference (for overwrites, only count the difference)
                     const sizeDelta = size - previousFileSize;
-
-                    // Scan for user profile with matching owner
-                    const scanResult = await docClient.send(new ScanCommand({
-                        TableName: userProfileTableName,
-                        FilterExpression: '#owner = :ownerVal',
-                        ExpressionAttributeNames: { '#owner': 'owner' },
-                        ExpressionAttributeValues: { ':ownerVal': owner }
-                    }));
-
-                    if (scanResult.Items && scanResult.Items.length > 0) {
-                        const profileId = scanResult.Items[0].id;
-
-                        // Increment storageUsed
-                        await docClient.send(new UpdateCommand({
+                    if (sizeDelta !== 0) {
+                        const scanResult = await docClient.send(new ScanCommand({
                             TableName: userProfileTableName,
-                            Key: { id: profileId },
-                            UpdateExpression: 'SET storageUsed = if_not_exists(storageUsed, :zero) + :delta, updatedAt = :now',
-                            ExpressionAttributeValues: {
-                                ':delta': sizeDelta,
-                                ':zero': 0,
-                                ':now': new Date().toISOString()
-                            }
+                            FilterExpression: '#owner = :ownerVal',
+                            ExpressionAttributeNames: { '#owner': 'owner' },
+                            ExpressionAttributeValues: { ':ownerVal': owner }
                         }));
-                        console.log(`Updated storage usage for ${owner}: +${sizeDelta} bytes`);
-                    } else {
-                        console.log(`No UserProfile found for owner: ${owner}`);
+
+                        if (scanResult.Items && scanResult.Items.length > 0) {
+                            const profileId = scanResult.Items[0].id;
+                            await docClient.send(new UpdateCommand({
+                                TableName: userProfileTableName,
+                                Key: { id: profileId },
+                                UpdateExpression: 'SET storageUsed = if_not_exists(storageUsed, :zero) + :delta, updatedAt = :now',
+                                ExpressionAttributeValues: {
+                                    ':delta': sizeDelta,
+                                    ':zero': 0,
+                                    ':now': new Date().toISOString()
+                                }
+                            }));
+                            console.log(`Updated storage usage for ${owner}: +${sizeDelta} bytes`);
+                        }
                     }
                 } catch (err) {
                     console.error('Error updating storage usage:', err);

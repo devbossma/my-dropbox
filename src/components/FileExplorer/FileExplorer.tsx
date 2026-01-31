@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Trash2, Download, Edit2, Search, ChevronDown, Eye, Link as LinkIcon } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -41,7 +41,7 @@ export default function FileExplorer({ files, folders, folderSizes, onNavigate, 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     // Clear selection on navigation
-    useMemo(() => {
+    useEffect(() => {
         setSelectedIds(new Set());
     }, [folders, files]); // When content changes (nav), clear selection.
 

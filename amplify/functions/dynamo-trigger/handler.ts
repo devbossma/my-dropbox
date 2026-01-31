@@ -1,6 +1,6 @@
-import { S3Client, CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, DeleteCommand, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { S3Client, CopyObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { DynamoDBClient, AttributeValue } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, DeleteCommand, ScanCommand, UpdateCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { DynamoDBStreamEvent } from 'aws-lambda';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 
@@ -18,32 +18,27 @@ export const handler = async (event: DynamoDBStreamEvent) => {
 
     for (const record of event.Records) {
         if (record.eventName === 'REMOVE') {
-            // Handle Deletion
-            const oldImage = record.dynamodb?.OldImage ? unmarshall(record.dynamodb.OldImage as any) : null;
+            const oldImage = record.dynamodb?.OldImage ? unmarshall(record.dynamodb.OldImage as unknown as Record<string, AttributeValue>) : null;
             if (oldImage && oldImage.s3Key) {
+                // Delete S3 object
                 await s3Client.send(new DeleteObjectCommand({
                     Bucket: bucketName,
                     Key: oldImage.s3Key
                 }));
                 console.log(`Deleted file: ${oldImage.s3Key}`);
 
-                // Decrement UserProfile storage usage
+                // Decrement storage usage
                 if (userProfileTableName && oldImage.owner && oldImage.fileSize) {
                     try {
-                        // Scan for user profile with matching owner
                         const scanResult = await docClient.send(new ScanCommand({
                             TableName: userProfileTableName,
                             FilterExpression: '#owner = :ownerVal',
                             ExpressionAttributeNames: { '#owner': 'owner' },
                             ExpressionAttributeValues: { ':ownerVal': oldImage.owner }
                         }));
-
                         if (scanResult.Items && scanResult.Items.length > 0) {
                             const profile = scanResult.Items[0];
-                            const currentUsage = profile.storageUsed || 0;
-                            const newUsage = Math.max(0, currentUsage - oldImage.fileSize);
-
-                            // Update storageUsed (ensure non-negative)
+                            const newUsage = Math.max(0, (profile.storageUsed || 0) - oldImage.fileSize);
                             await docClient.send(new UpdateCommand({
                                 TableName: userProfileTableName,
                                 Key: { id: profile.id },
@@ -53,9 +48,6 @@ export const handler = async (event: DynamoDBStreamEvent) => {
                                     ':now': new Date().toISOString()
                                 }
                             }));
-                            console.log(`Updated storage usage for ${oldImage.owner}: -${oldImage.fileSize} bytes (now: ${newUsage})`);
-                        } else {
-                            console.log(`No UserProfile found for owner: ${oldImage.owner}`);
                         }
                     } catch (err) {
                         console.error('Error updating storage usage:', err);
@@ -63,8 +55,8 @@ export const handler = async (event: DynamoDBStreamEvent) => {
                 }
             }
         } else if (record.eventName === 'MODIFY') {
-            const oldImage = record.dynamodb?.OldImage ? unmarshall(record.dynamodb.OldImage as any) : null;
-            const newImage = record.dynamodb?.NewImage ? unmarshall(record.dynamodb.NewImage as any) : null;
+            const oldImage = record.dynamodb?.OldImage ? unmarshall(record.dynamodb.OldImage as unknown as Record<string, AttributeValue>) : null;
+            const newImage = record.dynamodb?.NewImage ? unmarshall(record.dynamodb.NewImage as unknown as Record<string, AttributeValue>) : null;
 
             if (!oldImage || !newImage) continue;
 
@@ -72,47 +64,62 @@ export const handler = async (event: DynamoDBStreamEvent) => {
             const isMove = oldImage.s3Key !== newImage.s3Key;
 
             if (isRename || isMove) {
-                console.log(`Rename/Move detected. Migration start: ${oldImage.s3Key} -> (new name)`);
-
-                // Calculate new Key
                 const folderPath = newImage.folderPath || '';
                 const newS3Key = folderPath ? `${folderPath}/${newImage.fileName}` : newImage.fileName;
 
-                // If the Key hasn't effectively changed (e.g. false alarm), skip
-                if (newS3Key === oldImage.s3Key && !isMove) {
-                    console.log("No effective key change, skipping.");
+                if (newS3Key === oldImage.s3Key) {
+                    console.log("No effective S3 key change needed.");
                     continue;
                 }
 
-                console.log(`Migrating from ${oldImage.s3Key} to ${newS3Key}`);
+                console.log(`Renaming/Moving S3 object: ${oldImage.s3Key} -> ${newS3Key}`);
 
                 try {
-                    // 1. Copy Object in S3 (Preserves Metadata by default)
+                    // 1. Get metadata
+                    const headData = await s3Client.send(new HeadObjectCommand({
+                        Bucket: bucketName,
+                        Key: oldImage.s3Key
+                    }));
+
+                    // 2. S3 Copy with skip flag
                     await s3Client.send(new CopyObjectCommand({
                         Bucket: bucketName,
                         CopySource: `${bucketName}/${encodeURIComponent(oldImage.s3Key)}`,
-                        Key: newS3Key
+                        Key: newS3Key,
+                        Metadata: {
+                            ...(headData.Metadata || {}),
+                            'skip-db-trigger': 'true'
+                        },
+                        MetadataDirective: 'REPLACE'
                     }));
-                    console.log("S3 Copy done.");
 
-                    // 2. Delete Old Object in S3
+                    // 3. Delete old S3 object
                     await s3Client.send(new DeleteObjectCommand({
                         Bucket: bucketName,
                         Key: oldImage.s3Key
                     }));
-                    console.log("S3 Delete Old done.");
 
-                    // 3. Delete Old Record in DynamoDB
+                    // 4. Delete old DB record and create new one with new s3Key as ID
                     if (tableName) {
                         await docClient.send(new DeleteCommand({
                             TableName: tableName,
                             Key: { id: oldImage.id }
                         }));
-                        console.log("DB Delete Old done.");
+
+                        await docClient.send(new PutCommand({
+                            TableName: tableName,
+                            Item: {
+                                ...newImage,
+                                id: newS3Key,  // NEW ID = new s3Key
+                                s3Key: newS3Key,
+                                updatedAt: new Date().toISOString()
+                            }
+                        }));
+                        console.log("DB migration complete (delete old + create new)");
                     }
 
                 } catch (err) {
-                    console.error("Migration failed:", err);
+                    console.error("S3 Move failed:", err);
                 }
             }
         }

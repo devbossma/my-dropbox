@@ -111,7 +111,7 @@ function AuthenticatedApp() {
         // 2. Background Sync (Self-healing)
         // We run this quietly to ensure data consistency
         import('./utils/storageSync').then(({ syncStorageUsage }) => {
-          syncStorageUsage(profile.id).then(realSize => {
+          syncStorageUsage().then(realSize => {
             if (realSize !== profile.storageUsed) {
               console.log('Storage synced. Updating UI.');
               setStorageUsedBytes(realSize);

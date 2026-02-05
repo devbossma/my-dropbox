@@ -20,10 +20,6 @@ Building a serverless, production-ready file storage system similar to Dropbox p
 
 ### Production Deployment At:
 
-**Live Application:**
-- **Primary URL:** https://mydropbox.saberlabs.dev
-- **Amplify Default:** https://main.d2st7dsfis69v2.amplifyapp.com
-
 **How the Problem Was Solved:**
 
 ### Architecture Overview
@@ -479,7 +475,7 @@ git push -u origin main
    - Creates Route 53 DNS records (A/AAAA for CloudFront)
    - Configures CloudFront distribution
 6. Wait for DNS propagation (5-30 minutes)
-7. Access your app at: https://mydropbox.saberlabs.dev
+7. Access your app at: https://sub.example.dev
 ```
 
 ## Usage
@@ -495,15 +491,6 @@ npx ampx sandbox
 npm run dev
 
 # App opens at http://localhost:${PORT}
-```
-
-**For Production:**
-```bash
-# Access the deployed application
-https://mydropbox.saberlabs.dev
-
-# Or via Amplify default domain
-https://main.d2st7dsfis69v2.amplifyapp.com
 ```
 
 ### Basic Workflow
@@ -831,10 +818,6 @@ npx ampx sandbox
 **License:** MIT
 
 **Author:** SABER YASSINE
-
-**Live Demo:** https://mydropbox.saberlabs.dev
-
-**Repository:** https://github.com/devbossma/my-dropbox.git
 
 ### The Core Team
 
